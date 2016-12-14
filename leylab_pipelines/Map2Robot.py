@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 ## package
 from leylab_pipelines import Utils
+from leylab_pipelines import Fluent
 
 
 # functions
@@ -22,11 +23,11 @@ def parse_args(test_args=None):
     robot to conduct the NGS amplicon PCR prep (ie., combining MasterMix, primers, samples, etc).
 
     EXTRA COLUMNS in MAPPING FILE:
-    * "sample_labware" = The sample labware name on the robot worktable
-    * "sample_location" = The well or tube location (a number)
-    * "primer_labware" = The primer plate labware name on the robot worktable
-    * "primer_location" = The well location (1-96 or 1-384)
-    * "sample_rxn_volume" = The volume of sample to use per PCR (ul)
+    * "TECAN_sample_labware" = The sample labware name on the robot worktable
+    * "TECAN_sample_location" = The well or tube location (a number)
+    * "TECAN_primer_labware" = The primer plate labware name on the robot worktable
+    * "TECAN_primer_location" = The well location (1-96 or 1-384)
+    * "TECAN_sample_rxn_volume" = The volume of sample to use per PCR (ul)
 
     CONTROLS:
     * For the positive & negative controls, include them in the mapping file.
@@ -74,12 +75,12 @@ def parse_args(test_args=None):
     primers = parser.add_argument_group('primers')
     primers.add_argument('--fpvolume', type=float, default=1.0,
                         help='Forward primer volume per PCR')
-    primers.add_argument('--fptube', type=int, default=2,
-                        help='Forward primer tube number (if not in primer plate)')
     primers.add_argument('--rpvolume', type=float, default=1.0,
                         help='Reverse primer volume per PCR')
-    primers.add_argument('--rptube', type=int, default=3,
-                        help='Reverse primer tube number (if not in primer plate)')
+    primers.add_argument('--fptube', type=int, default=0,
+                        help='Forward primer tube number (if not in primer plate); 0 = No tube')
+    primers.add_argument('--rptube', type=int, default=0,
+                        help='Reverse primer tube number (if not in primer plate); 0 = No tube')
 
     ## Controls
     #controls = parser.add_argument_group('Controls')
@@ -148,8 +149,6 @@ def map2df(mapfile, row_select=None):
         df = pd.read_excel(xls)
     else:
         raise ValueError('Mapping file not in usable format')
-    # lowercase column names
-    df.columns = [x.lower() for x in df.columns.values]
 
     # selecting particular rows
     if row_select is not None:
@@ -163,11 +162,11 @@ def check_df_map(df_map, args):
     * Assumes `sample` field = 1st column
     """
     # checking columns
-    req_cols = ['sample_labware', 'sample_location',
-                'primer_labware', 'primer_location',
-                'sample_rxn_volume']
+    req_cols = ['TECAN_sample_labware', 'TECAN_sample_location',
+                'TECAN_primer_labware', 'TECAN_primer_location',
+                'TECAN_sample_rxn_volume']
 
-    msg = 'Required column "{}" not found (caps-invarant)'
+    msg = 'Required column "{}" not found'
     for req_col in req_cols:
         if req_col not in df_map.columns.values:
             raise ValueError(msg.format(req_col))
@@ -183,7 +182,7 @@ def check_df_map(df_map, args):
 
     # checking sample volumes
     msg = 'WARNING: sample volume > mastermix volume'
-    for sv in df_map['sample_rxn_volume']:
+    for sv in df_map['TECAN_sample_rxn_volume']:
         if sv > args.mmvolume:
             print(msg, file=sys.stderr)
         if sv < 0:
@@ -206,8 +205,10 @@ def add_dest(df_map, dest_labware_index, dest_type='96-well',
     except KeyError:
         raise KeyError('Destination labware type not recognized')
 
-    # init df
-    cols = ['#sampleid', 'rxn_rep', 'dest_labware', 'dest_location']
+    # init destination df
+    sample_col = df_map.columns[0]
+    cols = [sample_col, 'TECAN_pcr_rxn_rep',
+            'TECAN_dest_labware', 'TECAN_dest_location']
     ncol = len(cols)
     nrow = df_map.shape[0] * rxn_reps
     if dest_type == '96-well' and nrow > 97 - dest_start:
@@ -216,11 +217,12 @@ def add_dest(df_map, dest_labware_index, dest_type='96-well',
         nrow = 385 - dest_start
     df_dest = pd.DataFrame(np.nan, index=range(nrow), columns=cols)
 
-    # filling df
+    # filling destination df
     for i,(sample,rep) in enumerate(product(df_map.ix[:,0], range(rxn_reps))):
         # dest location
         dest_location = i + dest_start
-        msg = 'WARNING: Not enough wells for the number of samples; truncating'
+        msg = 'WARNING: Not enough wells for the number of samples'
+        msg = msg + '. Truncating to max samples that will fit on the plate'
         if dest_type == '96-well' and dest_location > 96:
             print(msg, file=sys.stderr)
             break
@@ -230,8 +232,8 @@ def add_dest(df_map, dest_labware_index, dest_type='96-well',
             # adding values DF
         df_dest.iloc[i] = [sample, rep+1, dest_labware, dest_location]
 
-    # df join
-    df_j = pd.merge(df_map, df_dest, on='#sampleid', how='inner')
+    # df join (map + destination)
+    df_j = pd.merge(df_map, df_dest, on=sample_col, how='inner')
     assert df_j.shape[0] == df_dest.shape[0], 'map-dest DF join error'
     assert df_j.shape[0] > 0, 'DF has len=0 after adding destinations'
 
@@ -245,60 +247,62 @@ def reorder_384well(df, reorder_col):
     df: pandas.DataFrame
     reorder_col: column name to reorder
     """
-    df['sort_IS_EVEN'] = [x % 2 == 0 for x in df[reorder_col]]
-    df.sort_values(by=['sort_IS_EVEN', reorder_col], inplace=True)
-    df = df.drop('sort_IS_EVEN', 1)
+    df['TECAN_sort_IS_EVEN'] = [x % 2 == 0 for x in df[reorder_col]]
+    df.sort_values(by=['TECAN_sort_IS_EVEN', reorder_col], inplace=True)
+    df = df.drop('TECAN_sort_IS_EVEN', 1)
     return df
 
 
-def _pip_mastermix(df_map, outFH):
-    """Commands for aliquoting mastermix
-    *AspirateParameters*
-    RackLabel = ? [name for the tube carrier?]
-    RackID = None
-    RackType = None
-    Position = args.mmtube [repeat for 8 channels?]
-    TubeID = None
-    Volume = [mastermix volume: multiple?]
-    LiquidClass = ?
-    TipType = ?
-    TipMask = None
-    ForceRackType = None
-
-    *DispenseParameters*
-    RackLabel = dest_labware
-    RackID = None
-    RackType = None
-    Position = [use 8 at a time?]
-    TubeID = None
-    Volume = [mastermix volume: multiple?]
-    LiquidClass = ?
-    TipType = ?
-    TipMask = None
-    ForceRackType = None
-
-    *WashParameters*
-    None?
+def pip_mastermix(df_map, outFH, mmvolume=13.1, mmtube=1):
+    """Writing worklist commands for aliquoting mastermix
     """
+    # just 1 command needed
+    rd = Fluent.reagent_distribution()
+    # source
+    ## tube rack ID
+    rd.SrcRackLabel = '???'
+    ## tube start/end
+    rd.SrcPosStart = mmtube
+    rd.SrcPosEnd = mmtube
 
-    pass
+    # destination
+    ## plate ID
+    dest_labware = set(df_map['TECAN_dest_labware'])
+    assert len(dest_labware) == 1, 'multiple destination labware not allowed!'
+    rd.DestRackLabel = list(dest_labware)[0]
+    ## destination start/end
+    rd.DestPosStart = int(min(df_map['TECAN_dest_location']))
+    rd.DestPosEnd = int(max(df_map['TECAN_dest_location']))
 
-def _pip_primers(df_map, outFH):
+    # other
+    rd.Volume = mmvolume
+
+    # write
+    outFH.write(rd.cmd() + '\n')
+    outFH.write('W;\n')
+
+
+def pip_primers(df_map, outFH):
     """Commands for aliquoting primers
     """
-    pass
+    # for each Sample-PCR_rxn_rep, write out asp/dispense commands
+    for i in range(df_map.shape[0]):
+        # aspiration
+        asp = Fluent.aspirate()
+        asp.RackLabel = df_map.ix[i,'TECAN_primer_labware']
+        asp.Position = df_map.ix[i,'TECAN_primer_location']
+        asp.Volume = df_map.ix[i,'TECAN_sample_rxn_volume']
+        outFH.write(asp.cmd() + '\n')
 
+        # dispensing
+        disp = Fluent.dispense()
+        disp.RackLabel = df_map.ix[i,'TECAN_dest_labware']
+        disp.Position = df_map.ix[i,'TECAN_dest_location']
+        disp.Volume = df_map.ix[i,'TECAN_sample_rxn_volume']
+        outFH.write(disp.cmd() + '\n')
 
-def make_GWL(df_map, outfile='TECAN.gwl'):
-    """Making GWL file
-    """
-    with open(outfile, 'w') as outFH:
-        # mastermix
-        _pip_mastermix(df_map, outFH)
-        # primers
-        _pip_primers(df_map, outFH)
-        # samples
-        # water
+        # tip to waste
+        outFH.write('W;\n')
 
 
 def main(args=None):
@@ -316,11 +320,17 @@ def main(args=None):
                       rxn_reps=args.rxns)
     # Reordering dest if plate type is 384-well
     if args.desttype == '384-well':
-        df_map = reorder_384well(df_map, 'dest_location')
-    # GWL construction
-    outfile = args.prefix + '.gwl'
-    make_GWL(df_map, outfile=outfile)
-    # Report (total volumes; sample truncation)
+        df_map = reorder_384well(df_map, 'TECAN_dest_location')
+    # GWL file construction
+    gwlFH = open(args.prefix + '.gwl', 'w')
+    pip_mastermix(df_map, gwlFH,
+                  mmtube = args.mmtube,
+                  mmvolume = args.mmvolume)
+    pip_primers(df_map, gwlFH)
+    gwlFH.close()
+    # Report (total volumes; sample truncation; samples)
+
+
 
 
 # main
