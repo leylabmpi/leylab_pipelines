@@ -58,6 +58,19 @@ def check_gwl(gwl_file):
     gwl_file.close()
 
 
+def to_win(file_name, suffix='_win'):
+    """Create a copy of a file but with windows line breakds
+    file_name : str, name of file
+    suffix : added to file name of copy
+    Returns : name of new file
+    """
+    x = os.path.splitext(file_name)
+    out_file = x[0] + suffix + x[1]
+    with open(file_name) as inFH, open(out_file, 'w') as outFH:
+        for line in inFH:
+            line = line.replace('\n', '\r\n')
+            outFH.write(line)
+    return out_file
 
 # main
 if __name__ == '__main__':

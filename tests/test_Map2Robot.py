@@ -200,11 +200,11 @@ class Test_Map2Robot_main(unittest.TestCase):
     def setUp(self):
         mapfile = os.path.join(data_dir, 'mapping_file_fecal_stability.txt')
         self.args = Map2Robot.parse_args(['--prefix', '/tmp/TMP', mapfile])
-        self.gwl,self.report,self.map = Map2Robot.main(self.args)
+        self.files = Map2Robot.main(self.args)
 
     def tearDown(self):
         pass
 
     def test_main_gwl(self):
-        ret = Utils.check_gwl(self.gwl)
+        ret = Utils.check_gwl(self.files[0])
         self.assertIsNone(ret)

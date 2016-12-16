@@ -137,7 +137,8 @@ class asp_disp():
 
     @Position.setter
     def Position(self, value):
-        self_Position = int(value)
+        self._Position = int(value)
+
 
 class aspirate(asp_disp):
     def __init__(self):

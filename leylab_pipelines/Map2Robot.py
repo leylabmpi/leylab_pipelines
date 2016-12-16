@@ -21,6 +21,8 @@ def parse_args(test_args=None):
     epi = """DESCRIPTION:
     Convert a QIIME-formatted mapping file to a GWL file, which is used by the TECAN
     robot to conduct the NGS amplicon PCR prep (ie., combining MasterMix, primers, samples, etc).
+    The extra columns in the mapping file designate the SOURCE of samples and primers;
+    the DESTINATION (plate & well) is set by this script. 
 
     EXTRA COLUMNS in MAPPING FILE:
     * "TECAN_sample_labware" = The sample labware name on the robot worktable
@@ -31,9 +33,14 @@ def parse_args(test_args=None):
 
     CONTROLS:
     * For the positive & negative controls, include them in the mapping file.
-    * For "sample_labware", use [TODO: what name?]
+    * If the controls (or samples) are provided in a tube, use "micro15[XXX]" 
+      for the "TECAN_sample_labware" column, but change "XXX" to the tube number
+      that you want to use (eg., micro15[003] for tube position 3)
 
-    NOTES:
+    OUTPUT FILES:
+    * The output files ending in "_win" have Windows line breads (needed for the robot)
+
+    MISC NOTES:
     * All volumes are in ul
     * Plate well locations are 1 to n-wells; numbering by column
     * PicoGreen should be added to the MasterMix *prior* to loading on robot
@@ -61,7 +68,7 @@ def parse_args(test_args=None):
     dest.add_argument('--rxns', type=int, default=3,
                       help='Number of replicate PCRs per sample')
     dest.add_argument('--destlabware', type=str,
-                      default='96-well:96 well[006],384-well:384 well[006]',
+                      default='96-well:96 Well[008],384-well:384 Well[004]',
                       help='Choices for the destination labware name base on --desttype')
 
     ## MasterMix
@@ -263,9 +270,8 @@ def pip_mastermix(df_map, outFH, mmvolume=13.1, mmtube=1):
     for i in range(df_map.shape[0]):
         # aspiration
         asp = Fluent.aspirate()
-        asp.RackLabel = 'micro15[{0:0>3}]'.format(mmtube) #'1x24 Eppendorf Tube Runner no Tubes[001]'
+        asp.RackLabel = 'micro15[{0:0>3}]'.format(mmtube)
         asp.Position = mmtube
-        #asp.RackType = '1x24 Eppendorf Tube Runner no Tubes'
         asp.Volume = mmvolume
         outFH.write(asp.cmd() + '\n')
 
@@ -493,7 +499,6 @@ def write_report(df_map, outFH, pcr_volume, mm_volume,
     outFH.write('')
 
 
-
 def main(args=None):
     # Input
     if args is None:
@@ -554,8 +559,15 @@ def main(args=None):
     df_map['TECAN_pcr_rxn_rep'] = df_map['TECAN_pcr_rxn_rep'].astype(int)
     df_map.to_csv(df_file, sep='\t', index=False, na_rep='NA')
 
+    # Create windows-line breaks formatted versions
+    gwl_file_win = Utils.to_win(gwl_file)
+    report_file_win = Utils.to_win(report_file)
+    df_file_win = Utils.to_win(df_file)
+
     # Return
-    return (gwl_file, report_file, df_file)
+    return (gwl_file, gwl_file_win,
+            report_file, report_file_win, 
+            df_file, df_file_win)
 
 # main
 if __name__ == '__main__':
