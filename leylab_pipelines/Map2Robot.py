@@ -360,7 +360,7 @@ def pip_primers(df_map, outFH, fp_volume=0, rp_volume=0,
         asp = Fluent.aspirate()
         asp.RackLabel = df_map.ix[i,'TECAN_primer_labware']
         asp.Position = df_map.ix[i,'TECAN_primer_location']
-        asp.Volume = df_map.ix[i,'TECAN_sample_rxn_volume']
+        asp.Volume = primer_plate_volume
         outFH.write(asp.cmd() + '\n')
 
         # dispensing
@@ -442,7 +442,6 @@ def write_report_line(outFH, subject, volume, round_digits=2, error_perc=None):
             volume = add_error(volume, error_perc)
         v = round(volume, round_digits)
     outFH.write('{}:\t{}\n'.format(subject, v))
-
 
 def write_report(df_map, outFH, pcr_volume, mm_volume,
                  fp_tube, fp_volume, rp_tube, rp_volume,
@@ -548,8 +547,15 @@ def main(args=None):
                      n_rxn_reps=args.rxns,
                      error_perc=args.errorperc)
 
+    # Mapping file with destinations
+    df_file = args.prefix + '_map.txt'
+    df_map['TECAN_water_rxn_volume'] = df_map['TECAN_water_rxn_volume'].round(2)
+    df_map['TECAN_dest_location'] = df_map['TECAN_dest_location'].astype(int)
+    df_map['TECAN_pcr_rxn_rep'] = df_map['TECAN_pcr_rxn_rep'].astype(int)
+    df_map.to_csv(df_file, sep='\t', index=False, na_rep='NA')
+
     # Return
-    return (gwl_file, report_file)
+    return (gwl_file, report_file, df_file)
 
 # main
 if __name__ == '__main__':

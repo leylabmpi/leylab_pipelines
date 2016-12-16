@@ -200,7 +200,7 @@ class Test_Map2Robot_main(unittest.TestCase):
     def setUp(self):
         mapfile = os.path.join(data_dir, 'mapping_file_fecal_stability.txt')
         self.args = Map2Robot.parse_args(['--prefix', '/tmp/TMP', mapfile])
-        self.gwl,self.report = Map2Robot.main(self.args)
+        self.gwl,self.report,self.map = Map2Robot.main(self.args)
 
     def tearDown(self):
         pass

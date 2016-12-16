@@ -110,7 +110,7 @@ class asp_disp():
         self.RackLabel = None
         self.RackID = None
         self.RackType = None
-        self.Position = 1
+        self._Position = 1
         self.TubeID = None
         self.Volume = None
         self.LiquidClass = 'Water Free Single'
@@ -131,6 +131,13 @@ class asp_disp():
         # return
         return ';'.join(vals)
 
+    @property
+    def Position(self):
+        return self._Position
+
+    @Position.setter
+    def Position(self, value):
+        self_Position = int(value)
 
 class aspirate(asp_disp):
     def __init__(self):
