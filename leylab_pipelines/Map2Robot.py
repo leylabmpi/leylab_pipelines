@@ -253,6 +253,7 @@ def reorder_384well(df, reorder_col):
     df['TECAN_sort_IS_EVEN'] = [x % 2 == 0 for x in df[reorder_col]]
     df.sort_values(by=['TECAN_sort_IS_EVEN', reorder_col], inplace=True)
     df = df.drop('TECAN_sort_IS_EVEN', 1)
+    df.index = range(df.shape[0])
     return df
 
 
@@ -517,6 +518,7 @@ def main(args=None):
     # Reordering dest if plate type is 384-well
     if args.desttype == '384-well':
         df_map = reorder_384well(df_map, 'TECAN_dest_location')
+
     # GWL file construction
     ## gwl open
     gwl_file = args.prefix + '.gwl'
