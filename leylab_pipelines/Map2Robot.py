@@ -176,8 +176,10 @@ def check_df_map(df_map, args):
     if any(df_map.duplicated(df_map.columns.values[0])):
         msg = 'WARNING: duplicated sample values in the mapping file'
         print(msg, file=sys.stderr)
-    # checking for unique barcodes
-    if any(df_map.duplicated(df_map.columns.values[1])):
+    # checking for unique barcodes (NaN's filtered out)
+    barcode_col = df_map.columns.values[1]
+    df_tmp = df_map[df_map[barcode_col].notnull()]
+    if any(df_tmp.duplicated(barcode_col)):
         msg = 'WARNING: duplicated barcodes in the mapping file'
         print(msg, file=sys.stderr)
 
@@ -438,9 +440,9 @@ def pip_water(df_map, outFH, pcr_volume=25.0,
 def add_error(x, error_perc):
     if x is None:
         return None
-    return x * (100 + error_perc)
+    return x * (1.0 + error_perc / 100.0)
 
-def write_report_line(outFH, subject, volume, round_digits=2, error_perc=None):
+def write_report_line(outFH, subject, volume, round_digits=1, error_perc=None):
     if volume is None:
         v = 'NA'
     else:

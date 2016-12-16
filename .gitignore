@@ -63,3 +63,5 @@ target/
 
 # misc
 .DS_Store
+~*
+._*
