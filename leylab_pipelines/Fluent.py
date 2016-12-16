@@ -141,7 +141,7 @@ class aspirate(asp_disp):
 class dispense(asp_disp):
     def __init__(self):
         asp_disp.__init__(self)
-        self._ID = 'A'
+        self._ID = 'D'
 
 
 

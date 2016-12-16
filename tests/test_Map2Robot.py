@@ -10,6 +10,7 @@ import unittest
 import pandas as pd
 ## package
 from leylab_pipelines import Map2Robot
+from leylab_pipelines import Utils
 
 
 # data dir
@@ -180,7 +181,8 @@ class Test_Map2Robot_pipMasterMix(unittest.TestCase):
                                          dest_type=self.args.desttype)
         if self.args.desttype == '384-well':
             self.df_map = reorder_384well(self.df_map, 'TECAN_dest_location')
-        self.gwlFH = sys.stdout
+        self.gwl = '/tmp/MM.gwl'
+        self.gwlFH = open(self.gwl, 'w')
 
     def tearDown(self):
         self.df_map = None
@@ -188,5 +190,21 @@ class Test_Map2Robot_pipMasterMix(unittest.TestCase):
 
     def test_pip_master_mix(self):
         Map2Robot.pip_mastermix(self.df_map, self.gwlFH)
+        self.gwlFH.close()
+        ret = Utils.check_gwl(self.gwl)
+        self.assertIsNone(ret)
 
 
+class Test_Map2Robot_main(unittest.TestCase):
+
+    def setUp(self):
+        mapfile = os.path.join(data_dir, 'mapping_file_fecal_stability.txt')
+        self.args = Map2Robot.parse_args(['--prefix', '/tmp/TMP', mapfile])
+        self.gwl,self.report = Map2Robot.main(self.args)
+
+    def tearDown(self):
+        pass
+
+    def test_main_gwl(self):
+        ret = Utils.check_gwl(self.gwl)
+        self.assertIsNone(ret)

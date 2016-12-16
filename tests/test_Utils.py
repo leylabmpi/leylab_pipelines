@@ -55,3 +55,8 @@ class Test_Utils(unittest.TestCase):
 
         x = Utils.make_range('1,2,5-6', set_zero_index=True)
         self.assertListEqual(x, [0,1,4,5])
+
+    def test_check_gwl(self):
+        gwl_file = os.path.join(data_dir, 'multi_dispense.gwl')
+        ret = Utils.check_gwl(gwl_file)
+        self.assertIsNone(ret)
