@@ -113,13 +113,21 @@ class asp_disp():
         self._Position = 1
         self.TubeID = None
         self.Volume = None
-        self.LiquidClass = 'Water Free Single'
+        self._LiquidClass = 'Water Free Single'
         self.TipType = None
         self.TipMask = None
         self.key_order = ['_ID',
                           'RackLabel', 'RackID', 'RackType',
                           'Position', 'TubeID', 'Volume',
                           'LiquidClass', 'TipType', 'TipMask']
+        self.psbl_liq_cls = ('Water Free Multi', 'Water Free Single',
+                             'MasterMix Free Multi', 'MasterMix Free Single', 
+                             'Ethanol Free Multi', 'Ethanol Free Single', 
+                             'DMSO Free Multi', 'DMSO Free Single', 
+                             'Serum Free Multi', 'Serum Free Single',
+                             'Water Contact Wet Multi', 'Water Contact Wet Single',
+                             'Water Mix')
+
 
     def cmd(self):
         # list of values in correct order
@@ -131,6 +139,10 @@ class asp_disp():
         # return
         return ';'.join(vals)
 
+    def liquid_classes(self):
+        x = '\n,'.join(list(self.psbl_liq_cls))
+        print(x)        
+
     @property
     def Position(self):
         return self._Position
@@ -138,6 +150,18 @@ class asp_disp():
     @Position.setter
     def Position(self, value):
         self._Position = int(value)
+
+    @property
+    def LiquidClass(self):
+        return self._LiquidClass
+
+    @LiquidClass.setter
+    def LiquidClass(self, value):
+        if value not in self.psbl_liq_cls:
+            msg = 'Liquid class "{}" not allowed'
+            raise TypeError(msg.format(value))
+        self._LiquidClass = value
+
 
 
 class aspirate(asp_disp):

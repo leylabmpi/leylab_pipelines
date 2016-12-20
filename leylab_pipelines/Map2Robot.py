@@ -276,6 +276,7 @@ def pip_mastermix(df_map, outFH, mmvolume=13.1, mmtube=1):
         asp.RackLabel = 'micro15[{0:0>3}]'.format(mmtube)
         asp.Position = mmtube
         asp.Volume = mmvolume
+        asp.LiquidClass = 'MasterMix Free Single'
         outFH.write(asp.cmd() + '\n')
 
         # dispensing
@@ -283,6 +284,7 @@ def pip_mastermix(df_map, outFH, mmvolume=13.1, mmtube=1):
         disp.RackLabel = df_map.ix[i,'TECAN_dest_labware']
         disp.Position = df_map.ix[i,'TECAN_dest_location']
         disp.Volume = mmvolume
+        disp.LiquidClass = 'MasterMix Free Single'
         outFH.write(disp.cmd() + '\n')
 
         # tip to waste
