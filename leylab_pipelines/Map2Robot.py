@@ -103,7 +103,6 @@ def parse_args(test_args=None):
         args = parser.parse_args()
     return args
 
-
 def check_args(args):
     """Checking user input
     """
@@ -269,52 +268,17 @@ def pip_mastermix(df_map, outFH, mmvolume=13.1, mmtube=1):
     """
     mmtube = int(mmtube)
     outFH.write('C;MasterMix\n')
-    # currently: tips used just once
-    for i in range(df_map.shape[0]):
-        # aspiration
-        asp = Fluent.aspirate()
-        asp.RackLabel = 'micro15[{0:0>3}]'.format(mmtube)
-        asp.Position = mmtube
-        asp.Volume = mmvolume
-        asp.LiquidClass = 'MasterMix Free Single'
-        outFH.write(asp.cmd() + '\n')
 
-        # dispensing
-        disp = Fluent.dispense()
-        disp.RackLabel = df_map.ix[i,'TECAN_dest_labware']
-        disp.Position = df_map.ix[i,'TECAN_dest_location']
-        disp.Volume = mmvolume
-        disp.LiquidClass = 'MasterMix Free Single'
-        outFH.write(disp.cmd() + '\n')
+    MD = Fluent.multi_disp()
+    MD.SrcRackLabel = 'micro15[{0:0>3}]'.format(mmtube)
+    MD.SrcPosition = mmtube
+    MD.DestRackLabel = df_map.ix[:,'TECAN_dest_labware']    
+    MD.DestPositions = df_map.ix[:,'TECAN_dest_location']
+    MD.Volume = mmvolume
+    MD.LiquidClass = 'MasterMix Free Multi'
+    MD.NoOfMultiDisp = int(np.floor(180 / mmvolume))  # using 200 ul tips
 
-        # tip to waste
-        outFH.write('W;\n')
-
-#    # just 1 command needed
-#    rd = Fluent.reagent_distribution()
-#    # source
-#    ## tube rack ID
-#    rd.SrcRackLabel = '1x24 Eppendorf Tube Runner no Tubes[001]'
-#    rd.SrcRackType = '1x24 Eppendorf Tube Runner no Tubes'
-#    ## tube start/end
-#    rd.SrcPosStart = mmtube
-#    rd.SrcPosEnd = mmtube
-#
-#    # destination
-#    ## plate ID
-#    dest_labware = set(df_map['TECAN_dest_labware'])
-#    assert len(dest_labware) == 1, 'multiple destination labware not allowed!'
-#    rd.DestRackLabel = list(dest_labware)[0]
-#    ## destination start/end
-#    rd.DestPosStart = int(min(df_map['TECAN_dest_location']))
-#    rd.DestPosEnd = int(max(df_map['TECAN_dest_location']))
-#
-#    # other
-#    rd.Volume = mmvolume
-#
-#    # write
-#    outFH.write(rd.cmd() + '\n')
-#    outFH.write('W;\n')
+    outFH.write(MD.cmd() + '\n')
 
 
 def pip_nonbarcode_primer(df_map, outFH, volume, tube):
@@ -333,6 +297,7 @@ def pip_nonbarcode_primer(df_map, outFH, volume, tube):
         asp.RackLabel = 'micro15[{0:0>3}]'.format(tube)
         asp.Position = tube
         asp.Volume = volume
+        asp.LiquidClass = 'Water Contact Wet Single'
         outFH.write(asp.cmd() + '\n')
 
         # dispensing
@@ -340,6 +305,7 @@ def pip_nonbarcode_primer(df_map, outFH, volume, tube):
         disp.RackLabel = df_map.ix[i,'TECAN_dest_labware']
         disp.Position = df_map.ix[i,'TECAN_dest_location']
         disp.Volume = volume
+        disp.LiquidClass = 'Water Contact Wet Single'
         outFH.write(disp.cmd() + '\n')
 
         # tip to waste
@@ -372,6 +338,7 @@ def pip_primers(df_map, outFH, fp_volume=0, rp_volume=0,
         asp.RackLabel = df_map.ix[i,'TECAN_primer_labware']
         asp.Position = df_map.ix[i,'TECAN_primer_location']
         asp.Volume = primer_plate_volume
+        asp.LiquidClass = 'Water Contact Wet Single'
         outFH.write(asp.cmd() + '\n')
 
         # dispensing
@@ -379,6 +346,7 @@ def pip_primers(df_map, outFH, fp_volume=0, rp_volume=0,
         disp.RackLabel = df_map.ix[i,'TECAN_dest_labware']
         disp.Position = df_map.ix[i,'TECAN_dest_location']
         disp.Volume = primer_plate_volume
+        asp.LiquidClass = 'Water Contact Wet Single'
         outFH.write(disp.cmd() + '\n')
 
         # tip to waste
@@ -395,6 +363,7 @@ def pip_samples(df_map, outFH):
         asp.RackLabel = df_map.ix[i,'TECAN_sample_labware']
         asp.Position = df_map.ix[i,'TECAN_sample_location']
         asp.Volume = df_map.ix[i,'TECAN_sample_rxn_volume']
+        asp.LiquidClass = 'Water Contact Wet Single'
         outFH.write(asp.cmd() + '\n')
 
         # dispensing
@@ -402,6 +371,7 @@ def pip_samples(df_map, outFH):
         disp.RackLabel = df_map.ix[i,'TECAN_dest_labware']
         disp.Position = df_map.ix[i,'TECAN_dest_location']
         disp.Volume = df_map.ix[i,'TECAN_sample_rxn_volume']
+        disp.LiquidClass = 'Water Contact Wet Single'
         outFH.write(disp.cmd() + '\n')
 
         # tip to waste
@@ -428,12 +398,14 @@ def pip_water(df_map, outFH, pcr_volume=25.0,
         asp.RackLabel = df_map.ix[i,'TECAN_sample_labware']
         asp.Position = df_map.ix[i,'TECAN_sample_location']
         asp.Volume = water_volume[i]
+        asp.LiquidClass = 'Water Contact Wet Single'
         outFH.write(asp.cmd() + '\n')
 
         # dispensing
         disp = Fluent.dispense()
         disp.RackLabel = df_map.ix[i,'TECAN_dest_labware']
         disp.Position = df_map.ix[i,'TECAN_dest_location']
+        disp.LiquidClass = 'Water Contact Wet Single'
         disp.Volume = water_volume[i]
         outFH.write(disp.cmd() + '\n')
 
@@ -578,7 +550,5 @@ def main(args=None):
 # main
 if __name__ == '__main__':
     pass
-
-
 
 
