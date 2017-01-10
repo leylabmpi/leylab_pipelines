@@ -4,9 +4,6 @@
 from setuptools import setup
 import glob
 
-with open('README.rst') as readme_file:
-    readme = readme_file.read()
-
 with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
@@ -20,11 +17,17 @@ test_requirements = [
 
 scripts = glob.glob('scripts/*.py')
 
+long_desc = """
+General bioinformatic pipelines associated with the Ley Lab at the MPI in Tuebingen.
+For more information, see the README.
+"""
+
+
 setup(
     name='leylab_pipelines',
     version='0.1.0',
-    description=" General bioinformatic pipelines associated with the Ley Lab at the MPI in Tuebingen",
-    long_description=readme + '\n\n' + history,
+    description="General bioinformatic pipelines associated with the Ley Lab at the MPI in Tuebingen",
+    long_description=long_desc + '\n\n' + history,
     author="Nick Youngblut",
     author_email='nyoungb2@gmail.com',
     url='https://github.com/nick-youngblut/leylab_pipelines',
