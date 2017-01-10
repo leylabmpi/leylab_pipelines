@@ -72,6 +72,32 @@ class Test_Dilute_check_df_conc(unittest.TestCase):
         self.assertTrue(isinstance(self.df_conc, pd.DataFrame))
         Dilute.check_df_conc(self.df_conc, self.args)
 
+class Test_Dilute_dil_vols(unittest.TestCase):
+
+    def setUp(self):
+        concfile = os.path.join(data_dir, 'conc_file1.txt')
+        self.args = Dilute.parse_args([concfile])
+        Dilute.check_args(self.args)
+        self.df_conc = Dilute.conc2df(self.args.concfile)
+        Dilute.check_df_conc(self.df_conc, self.args)
+        self.df_conc = Dilute.dilution_volumes(self.df_conc,
+                                               dilute_conc=self.args.dilution,
+                                               min_vol=self.args.minvolume,
+                                               max_vol=self.args.maxvolume,
+                                               min_total=self.args.mintotal,
+                                               dest_type=self.args.desttype)
+
+    def tearDown(self):
+        self.df_conc = None
+        pass
+
+    # import
+    def test_load_conc_txt(self):
+        self.assertTrue(isinstance(self.df_conc, pd.DataFrame))
+        print('\n')
+        print(self.df_conc)
+
+
 class Test_Dilute_addDest(unittest.TestCase):
 
     def setUp(self):
