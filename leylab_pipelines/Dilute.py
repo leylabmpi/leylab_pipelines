@@ -251,8 +251,6 @@ def pip_dilutant(df_conc):
     Method:
     * calc max multi-dispense for 50 or 200 ul tips 
     """
-    # which tips?
-
     # making multi-disp object
     print('C;MasterMix')
     MD = Fluent.multi_disp()
@@ -260,8 +258,7 @@ def pip_dilutant(df_conc):
     MD.SrcPosition = 1                                     # need to set for all channels?
     MD.DestRackLabel = df_conc.dest_labware
     MD.DestPositions = df_conc.dest_location
-    MD.Volume = df_conc.dilutant_volume                      # variable volumes
-    MD.LiquidClass = 'MasterMix Free Multi'
+    MD.Volume = df_conc.dilutant_volume                # NEED variable volumes!
     MD.NoOfMultiDisp = int(np.floor(180 / mmvolume))  # using 200 ul tips
     # writing
     print(MD.cmd() + '\n')

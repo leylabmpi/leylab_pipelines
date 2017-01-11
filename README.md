@@ -1,6 +1,5 @@
-[![PyPI version](https://img.shields.io/pypi/v/leylab_pipelines.svg)](https://pypi.python.org/pypi/leylab_pipelines)
-[![Build Status](https://img.shields.io/travis/nick-youngblut/leylab_pipelines.svg)](https://travis-ci.org/nick-youngblut/leylab_pipelines)
-
+[![Build Status](https://travis-ci.org/leylabmpi/leylab_pipelines.svg?branch=master)](https://travis-ci.org/leylabmpi/leylab_pipelines)
+[![PyPI version](https://badge.fury.io/py/leylab_pipelines.svg)](http://badge.fury.io/py/leylab_pipelines)
 
 leylab_pipelines
 =================
