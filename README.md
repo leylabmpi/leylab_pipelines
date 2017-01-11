@@ -21,16 +21,26 @@ leylab_pipelines
 
 [[top](#sections)]
 
-* NGS pipeline scripts & functions
-  * Convert QIIME formatted mapping file to NGS library prep commands for the TECAN robot. 
+### TECAN robot helper scripts
+
+#### `map2robot.py`
+
+Convert QIIME formatted mapping file to NGS library prep commands for the TECAN robot. 
+
+#### `dilute.py`
+
+Based on a table of sample concentrations, create TECAN robot commands for sample dilution.
+
 
 ## Examples
 
 [[top](#sections)]
 
-### Convert mapping file to NGS library prep commands for the TECAN robot
+### TECAN robot helper scripts
 
-* See the bash scripts under `./examples/map2robot/`
+* See the bash scripts in:
+  * `./examples/map2robot/`
+  * `./examples/dilute/`
 
 
 ## Installation
