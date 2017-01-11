@@ -17,7 +17,7 @@ from leylab_pipelines import Fluent
 # functions
 def parse_args(test_args=None):
     # desc
-    desc = 'Convert a mapping file to a NGS amplicon worklist file for the TECAN robot'
+    desc = 'Create robot commands for diluting samples'
     epi = """DESCRIPTION:
     Create a worklist file for the TECAN Fluent robot for diluting samples.
     The input is an Excel or tab-delimited file with:
@@ -25,11 +25,10 @@ def parse_args(test_args=None):
     * Sample location (numeric value; minimum of 1)
     * Sample concentration (numeric value; units=ng/ul)
     
-    You can designate the columns for each value (see options).
-
-    Sample locations in plates numbered are column-wise. 
-
-    All volumes are in ul.
+    Notes:
+    * You can designate the input table columns for each value (see options).
+    * Sample locations in plates numbered are column-wise. 
+    * All volumes are in ul.
     """
     parser = argparse.ArgumentParser(description=desc, epilog=epi,
                                      formatter_class=argparse.RawTextHelpFormatter)
@@ -39,6 +38,8 @@ def parse_args(test_args=None):
     groupIO = parser.add_argument_group('I/O')
     groupIO.add_argument('concfile', metavar='ConcFile', type=str,
                          help='An excel or tab-delim file of concentrations')
+    groupIO.add_argument('--prefix', type=str, default='TECAN_dilute',
+                         help='Output file name prefix')
 
     ## concentration file
     conc = parser.add_argument_group('Concentation file')
@@ -65,6 +66,8 @@ def parse_args(test_args=None):
                      help='Maximum sample volume to use')
     dil.add_argument('--mintotal', type=float, default=10.0,
                      help='Minimum post-dilution total volume')
+    dil.add_argument('--dlabware', type=str, default='Trough[001]',
+                     help='Labware containing the dilutant')
 
     ## destination plate
     dest = parser.add_argument_group('Destination plate')
@@ -108,7 +111,8 @@ def check_args(args):
         msg = 'Destination start well # must be in range: 1-{}'
         raise ValueError(msg.format(destlimit))
     # destination labware
-    args.destlabware = {x.split(':')[0]:x.split(':')[1] for x in args.destlabware.split(',')}    
+    args.destlabware = {x.split(':')[0]:x.split(':')[1] for x in args.destlabware.split(',')} 
+
 
 def conc2df(concfile, row_select=None, file_format=None, header=True,
             labware_col=1, location_col=2, conc_col=3):
@@ -140,16 +144,13 @@ def conc2df(concfile, row_select=None, file_format=None, header=True,
     if row_select is not None:
         df = df.iloc[row_select]
 
-    # adding column info
-    ## changing column names
-    cols = df.columns.tolist()
-    cols[labware_col-1] = 'labware'
-    cols[location_col-1] = 'location'
-    cols[conc_col-1] = 'conc'
-    df.columns = cols
-    
+    # selecting columns
+    df = df.iloc[:,[labware_col-1,location_col-1,conc_col-1]]
+    df.columns = ['labware', 'location', 'conc']
+
     # return
     return df
+
 
 def check_df_conc(df_conc, args):
     """Assertions of df_conc object formatting
@@ -165,6 +166,7 @@ def check_df_conc(df_conc, args):
     for i,sc in enumerate(df_conc['conc']):
         if sc <= 0.0:
             print(msg.format(i), file=sys.stderr)
+
 
 def dilution_volumes(df_conc, dilute_conc, min_vol, max_vol, 
                      min_total, dest_type='96-well'):
@@ -232,6 +234,7 @@ def add_dest(df_conc, dest_labware_index, dest_type='96-well', dest_start=1):
     # return
     return df_conc
 
+
 def reorder_384well(df, reorder_col):
     """Reorder values so that the odd, then the even locations are
     transferred. This is faster for a 384-well plate
@@ -245,23 +248,58 @@ def reorder_384well(df, reorder_col):
     return df
 
 
-def pip_dilutant(df_conc):
+def pip_dilutant(df_conc, outFH, src_labware='Trough[001]'):
     """Writing worklist commands for aliquoting dilutant.
     Using 1-asp-multi-disp with 200 ul tips.
     Method:
     * calc max multi-dispense for 50 or 200 ul tips 
     """
+    # determing how many multi-disp
+    max_vol = max(df_conc.dilutant_volume)
+    if max_vol > 180:
+        n_disp = int(np.floor(900 / max_vol))  # using 1000 ul tips
+    else:
+        n_disp= int(np.floor(180 / max_vol))   # using 200 ul tips
+
+    
+
     # making multi-disp object
-    print('C;MasterMix')
+    outFH.write('C;Dilutant\n')
     MD = Fluent.multi_disp()
-    MD.SrcRackLabel = 'trough[001]'                        # user defined?
-    MD.SrcPosition = 1                                     # need to set for all channels?
+    MD.SrcRackLabel = src_labware
+    MD.SrcPosition = 1                               # need to set for all channels?
     MD.DestRackLabel = df_conc.dest_labware
     MD.DestPositions = df_conc.dest_location
-    MD.Volume = df_conc.dilutant_volume                # NEED variable volumes!
-    MD.NoOfMultiDisp = int(np.floor(180 / mmvolume))  # using 200 ul tips
+    MD.Volume = df_conc.dilutant_volume             
+    MD.NoOfMultiDisp = n_disp
     # writing
-    print(MD.cmd() + '\n')
+    outFH.write(MD.cmd() + '\n')
+
+
+def pip_samples(df_conc, outFH):
+    """Commands for aliquoting samples into dilutant
+    """
+    outFH.write('C;Samples\n')
+    # for each Sample-PCR_rxn_rep, write out asp/dispense commands
+    for i in range(df_conc.shape[0]):
+        # aspiration
+        asp = Fluent.aspirate()
+        asp.RackLabel = df_conc.ix[i,'labware']
+        asp.Position = df_conc.ix[i,'location']
+        asp.Volume = round(df_conc.ix[i,'sample_volume'], 2)
+        asp.LiquidClass = 'Water Contact Wet Single'
+        outFH.write(asp.cmd() + '\n')
+
+        # dispensing
+        disp = Fluent.dispense()
+        disp.RackLabel = df_conc.ix[i,'dest_labware']
+        disp.Position = df_conc.ix[i,'dest_location']
+        disp.Volume = round(df_conc.ix[i,'sample_volume'], 2)
+        disp.LiquidClass = 'Water Contact Wet Single'
+        outFH.write(disp.cmd() + '\n')
+
+        # tip to waste
+        outFH.write('W;\n')
 
 
 def main(args=None):
@@ -289,7 +327,7 @@ def main(args=None):
     
     # Adding destination data
     df_conc = add_dest(df_conc, 
-                       dest_labware=args.destlabware,
+                       dest_labware_index=args.destlabware,
                        dest_type=args.desttype,
                        dest_start=args.deststart)
     
@@ -298,7 +336,24 @@ def main(args=None):
         df_conc = reorder_384well(df_conc, 'dest_location')
     
     # Writing out gwl file
-    
+    gwl_file = args.prefix + '.gwl'
+    with open(gwl_file, 'w') as gwlFH:
+        ## Dilutant
+        pip_dilutant(df_conc, outFH=gwlFH, src_labware=args.dlabware)
+        ## Sample
+        pip_samples(df_conc, outFH=gwlFH)
+
+    # Writing out table
+    conc_file = args.prefix + '_conc.txt'
+    df_conc.round(1).to_csv(conc_file, sep='\t', index=False)
+
+    # Create windows-line breaks formatted versions
+    gwl_file_win = Utils.to_win(gwl_file)
+    conc_file_win = Utils.to_win(conc_file)
+
+    # end
+    return (gwl_file, gwl_file_win, conc_file, conc_file_win)
+
 
 # main
 if __name__ == '__main__':

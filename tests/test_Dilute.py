@@ -94,8 +94,6 @@ class Test_Dilute_dil_vols(unittest.TestCase):
     # import
     def test_load_conc_txt(self):
         self.assertTrue(isinstance(self.df_conc, pd.DataFrame))
-        print('\n')
-        print(self.df_conc)
 
 
 class Test_Dilute_addDest(unittest.TestCase):
@@ -115,7 +113,6 @@ class Test_Dilute_addDest(unittest.TestCase):
         self.df_conc = Dilute.add_dest(self.df_conc, self.args.destlabware)
         self.assertTrue(isinstance(self.df_conc, pd.DataFrame))
 
-
     # destination start offset
     def test_load_conc_deststart(self):
         self.df_conc = Dilute.add_dest(self.df_conc,
@@ -127,3 +124,31 @@ class Test_Dilute_addDest(unittest.TestCase):
         self.assertEqual(loc_start, 49)
 
 
+class Test_Dilute_main1(unittest.TestCase):
+
+    def setUp(self):
+        concfile = os.path.join(data_dir, 'conc_file1.txt')
+        self.args = Dilute.parse_args(['--prefix', '/tmp/DIL1', concfile])
+        self.files = Dilute.main(self.args)
+
+    def tearDown(self):
+        pass
+
+    def test_main_gwl(self):
+        ret = Utils.check_gwl(self.files[0])
+        self.assertIsNone(ret)
+
+
+class Test_Dilute_main2(unittest.TestCase):
+
+    def setUp(self):
+        concfile = os.path.join(data_dir, 'conc_file2.txt')
+        self.args = Dilute.parse_args(['--prefix', '/tmp/DIL2', concfile])
+        self.files = Dilute.main(self.args)
+
+    def tearDown(self):
+        pass
+
+    def test_main_gwl(self):
+        ret = Utils.check_gwl(self.files[0])
+        self.assertIsNone(ret)

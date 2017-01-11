@@ -10,4 +10,6 @@ from leylab_pipelines import Dilute
 
 # main
 if __name__ == '__main__':
-    Dilution.main()
+    files = Dilution.main()
+    for F in files:
+        print('File written: {}'.format(F), file=sys.stderr)

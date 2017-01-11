@@ -156,6 +156,11 @@ class multi_disp():
             return x
 
     def cmd(self):
+        # volume as interable
+        if hasattr(self.Volume, '__iter__'):
+            self.Volumes = self.Volume
+        else:
+            self.Volumes = [self.Volume] * len(self.DestPositions)
         # each multi-disp
         steps = []
         for i in range(0, self.SampleCount, self.NoOfMultiDisp):
@@ -170,7 +175,8 @@ class multi_disp():
             asp = aspirate()
             asp.RackLabel = self.SrcRackLabel
             asp.Position = self.SrcPosition
-            asp.Volume = asp_vol
+            asp.Volume = sum(self.Volumes[i:(i+n_disp)])   #asp_vol
+            asp.Volume = round(asp.Volume, 2)
             asp.LiquidClass = self.LiquidClass
             steps.append(asp.cmd())
             # multi-disp
@@ -178,7 +184,7 @@ class multi_disp():
                 disp = dispense()
                 disp.RackLabel = self.DestRackLabel[i+ii]
                 disp.Position = self.DestPositions[i+ii]
-                disp.Volume = self.Volume
+                disp.Volume = round(self.Volumes[i+ii], 2)
                 disp.LiquidClass = self.LiquidClass
                 steps.append(disp.cmd())
                 
