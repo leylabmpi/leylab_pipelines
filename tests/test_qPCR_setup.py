@@ -81,6 +81,18 @@ class Test_add_dest(unittest.TestCase):
     # import
     def test_add_dest(self):
         self.assertTrue(isinstance(self.df_setup, pd.DataFrame))
-        print(self.df_setup)
+        #print(self.df_setup)
 
+class Test_qPCR_main1(unittest.TestCase):
 
+    def setUp(self):
+        infile = os.path.join(data_dir, 'qPCR_setup/qPCR_Zach_plate1.xlsx')
+        args = QPCR.parse_args([infile])
+        self.files = QPCR.main(args)
+
+    def tearDown(self):
+        pass
+
+    def test_main_gwl(self):
+        ret = Utils.check_gwl(self.files[0])
+        self.assertIsNone(ret)
