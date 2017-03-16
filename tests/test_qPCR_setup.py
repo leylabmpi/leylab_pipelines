@@ -1,0 +1,86 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+# import
+## batteries
+import os
+import sys
+import unittest
+## 3rd party
+import pandas as pd
+## package
+from leylab_pipelines import QPCR
+from leylab_pipelines import Utils
+
+
+# data dir
+test_dir = os.path.join(os.path.dirname(__file__))
+data_dir = os.path.join(test_dir, 'data')
+
+
+
+# tests
+class Test_import(unittest.TestCase):
+
+    def setUp(self):
+        infile = os.path.join(data_dir, 'qPCR_setup/qPCR_Zach_plate1.xlsx')
+        args = QPCR.parse_args([infile])
+        QPCR.check_args(args)
+        self.df_setup = QPCR.load_setup(args.setup)
+        QPCR.check_df_setup(self.df_setup)
+
+    def tearDown(self):
+        self.df_setup = None
+        pass
+
+    # import
+    def test_load_excel(self):
+        self.assertTrue(isinstance(self.df_setup, pd.DataFrame))
+        #print(self.df_setup)
+
+class Test_src_edit(unittest.TestCase):
+
+    def setUp(self):
+        infile = os.path.join(data_dir, 'qPCR_setup/qPCR_Zach_plate1.xlsx')
+        args = QPCR.parse_args([infile])
+        QPCR.check_args(args)
+        self.df_setup = QPCR.load_setup(args.setup)
+        QPCR.check_df_setup(self.df_setup)
+        QPCR.edit_src_labware(self.df_setup,
+                              src_type=args.srctype,
+                              src_labware_index=args.srclabware)
+
+    def tearDown(self):
+        self.df_setup = None
+        pass
+
+    # import
+    def test_src_edit(self):
+        self.assertTrue(isinstance(self.df_setup, pd.DataFrame))
+        #print(self.df_setup)
+
+class Test_add_dest(unittest.TestCase):
+
+    def setUp(self):
+        infile = os.path.join(data_dir, 'qPCR_setup/qPCR_Zach_plate1.xlsx')
+        args = QPCR.parse_args([infile])
+        QPCR.check_args(args)
+        self.df_setup = QPCR.load_setup(args.setup)
+        QPCR.check_df_setup(self.df_setup)
+        QPCR.edit_src_labware(self.df_setup,
+                              src_type=args.srctype,
+                              src_labware_index=args.srclabware)
+        QPCR.add_dest(self.df_setup,
+                      dest_type=args.desttype,
+                      dest_labware_index=args.destlabware)
+        
+    def tearDown(self):
+        self.df_setup = None
+        pass
+
+    # import
+    def test_add_dest(self):
+        self.assertTrue(isinstance(self.df_setup, pd.DataFrame))
+        print(self.df_setup)
+
+
