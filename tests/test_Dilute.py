@@ -110,14 +110,14 @@ class Test_Dilute_addDest(unittest.TestCase):
 
     # adding destination
     def test_load_conc_txt(self):
-        self.df_conc = Dilute.add_dest(self.df_conc, self.args.destlabware)
+        self.df_conc = Dilute.add_dest(self.df_conc, self.args.dest, self.args.deststart)
         self.assertTrue(isinstance(self.df_conc, pd.DataFrame))
 
     # destination start offset
     def test_load_conc_deststart(self):
         self.df_conc = Dilute.add_dest(self.df_conc,
-                                         self.args.destlabware,
-                                         dest_start=49)
+                                       self.args.dest,
+                                       dest_start=49)
 
         self.assertTrue(isinstance(self.df_conc, pd.DataFrame))
         loc_start = self.df_conc.loc[0,'dest_location']
