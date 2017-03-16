@@ -38,26 +38,6 @@ class Test_import(unittest.TestCase):
         self.assertTrue(isinstance(self.df_setup, pd.DataFrame))
         #print(self.df_setup)
 
-class Test_src_edit(unittest.TestCase):
-
-    def setUp(self):
-        infile = os.path.join(data_dir, 'qPCR_setup/qPCR_Zach_plate1.xlsx')
-        args = QPCR.parse_args([infile])
-        QPCR.check_args(args)
-        self.df_setup = QPCR.load_setup(args.setup)
-        QPCR.check_df_setup(self.df_setup)
-        QPCR.edit_src_labware(self.df_setup,
-                              src_type=args.srctype,
-                              src_labware_index=args.srclabware)
-
-    def tearDown(self):
-        self.df_setup = None
-        pass
-
-    # import
-    def test_src_edit(self):
-        self.assertTrue(isinstance(self.df_setup, pd.DataFrame))
-        #print(self.df_setup)
 
 class Test_add_dest(unittest.TestCase):
 
@@ -67,12 +47,7 @@ class Test_add_dest(unittest.TestCase):
         QPCR.check_args(args)
         self.df_setup = QPCR.load_setup(args.setup)
         QPCR.check_df_setup(self.df_setup)
-        QPCR.edit_src_labware(self.df_setup,
-                              src_type=args.srctype,
-                              src_labware_index=args.srclabware)
-        QPCR.add_dest(self.df_setup,
-                      dest_type=args.desttype,
-                      dest_labware_index=args.destlabware)
+        QPCR.add_dest(self.df_setup, args.dest, dest_type=args.desttype)
         
     def tearDown(self):
         self.df_setup = None

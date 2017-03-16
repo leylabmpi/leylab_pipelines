@@ -46,27 +46,37 @@ def parse_args(test_args=None):
     groupIO.add_argument('setup', metavar='SetupFile', type=str,
                          help='An Excel or CSV file with experimental setup')
     groupIO.add_argument('--prefix', type=str, default='TECAN_qPCR',
-                         help='Output file name prefix')
+                         help='Output file name prefix (default: %(default)s)')
     groupIO.add_argument('--format', type=str, default=None,
-                        help='File format (Excel or CSV). If not provided, the format is determined from the file extension') 
-
-    ## source sample plate
-    src = parser.add_argument_group('Source sample plate')
-    src.add_argument('--srctype', type=str, default='96-well',
-                      choices=['96-well','384-well'],
-                      help='Source sample plate labware type')
-    src.add_argument('--srclabware', type=str,
-                      default='96-well:96-well [001],384-well:384 Well[001],Tube:1x24 tube runner',
-                      help='Choices for the source labware name base on --srctype')
+                        help='File format (Excel or CSV). If not provided, the format is determined from the file extension (default: %(default)s)') 
 
     ## destination plate
-    dest = parser.add_argument_group('Destination plate')
-    dest.add_argument('--desttype', type=str, default='384-well',
-                      choices=['96-well','384-well'],
-                      help='Destination plate labware type')
-    dest.add_argument('--destlabware', type=str,
-                      default='96-well:96-well [002],384-well:384 Well[002]',
-                      help='Choices for the destination labware name base on --desttype')
+    dest = parser.add_argument_group('Destination labware')
+    dest.add_argument('--dest', type=str, default='384 Well[004]',
+                      help='Destination plate labware ID on TECAN worktable (default: %(default)s)')
+    dest.add_argument('--desttype', type=str, default='384',
+                      choices=['96', '384'],
+                      help='Destination plate labware type (default: %(default)s)')
+
+    ## source labware 
+    src = parser.add_argument_group('Source labware')
+    src.add_argument('--mm', type=str, default='Tubes[001]',
+                      help='Mastermix source labware ID on TECAN worktable (default: %(default)s)')
+    src.add_argument('--mmloc', type=int, default=1,
+                      help='Mastermix start position on source labware (default: %(default)s)')
+    src.add_argument('--water', type=str, default='100ml[001]',
+                      help='Water source labware ID on TECAN worktable (default: %(default)s)')
+    src.add_argument('--waterloc', type=int, default=1,
+                      help='Water start position on source labware (default: %(default)s)')
+
+    # liquid classes
+    liq = parser.add_argument_group('Liquid classes')
+    liq.add_argument('--mmliq', type=str, default='MasterMix Free Multi',
+                      help='Mastermix liquid class (default: %(default)s)')
+    liq.add_argument('--sampliq', type=str, default='Water Contact Wet Single',
+                      help='Sample liquid class (default: %(default)s)')
+    liq.add_argument('--waterliq', type=str, default='Water Contact Wet Single',
+                      help='Water liquid class (default: %(default)s)')
 
     # parse & return
     if test_args:
@@ -79,12 +89,7 @@ def parse_args(test_args=None):
 def check_args(args):
     """Checking user input
     """
-    # destination start
-    args.destype = args.desttype.lower()
-    # source labware
-    args.srclabware = {x.split(':')[0].lower():x.split(':')[1] for x in args.srclabware.split(',')} 
-    # destination labware
-    args.destlabware = {x.split(':')[0].lower():x.split(':')[1] for x in args.destlabware.split(',')} 
+    pass
 
 
 def load_setup(input_file, file_format=None, header=0):
@@ -146,37 +151,7 @@ def check_df_setup(df_setup):
         assert np.isnan(vol) or vol >= 0.0, msg.format(i)
     
 
-def _edit_src_labware(labware_type, labware_index):
-    msg = 'Labware type "{}" not recognized'
-    if isinstance(labware_type, str):
-        labware_type = labware_type.lower()
-        try: 
-            x = labware_index[labware_type]
-        except KeyError:
-            raise KeyError(msg.format(labware_type))
-    elif np.isnan(labware_type):
-        return None
-    else:
-        raise ValueError('Logic error for labware type "{}"'.format(labware_type))        
-    return x
-
-
-def edit_src_labware(df_setup, src_labware_index, src_type='96-well'):
-    """Editing source labware for TECAN gwl
-    Changing ['sample labware'] columne
-    """
-    try:
-        src_labware = src_labware_index[src_type]
-    except KeyError:
-        msg = 'src labware type "{}" not recognized'
-        raise KeyError(msg.format(src_type))
-    
-    # changing sample labware
-    func = lambda x: _edit_src_labware(x['sample labware'], src_labware_index)
-    df_setup['sample labware'] = df_setup.apply(func, 1)
-
-
-def plate2robot_loc(row_val, col_val, plate_type='96-well'):
+def plate2robot_loc(row_val, col_val, plate_type='96'):
     """Changing positioning from row (letter) and column (number)
     to just numeric position (column-wise) on the plate,
     which is needed for TECAN robot positioning. 
@@ -184,6 +159,7 @@ def plate2robot_loc(row_val, col_val, plate_type='96-well'):
     [args]
     row_val: string
     col_vol: string
+    plate_type: string; plate type to determine well location indexing
     """    
     # index for converting row to numeric
     idx = string.ascii_uppercase
@@ -192,10 +168,10 @@ def plate2robot_loc(row_val, col_val, plate_type='96-well'):
 
     # getting location on plate
     msg = 'Destination location "{}" is out of range'
-    if plate_type == '96-well':
+    if plate_type == '96':
         loc = (col_val - 1) * 8 + row_val
         assert loc > 0 and loc <= 96, msg.format(loc)
-    elif plate_type == '384-well':
+    elif plate_type == '384':
         loc = (col_val - 1) * 16 + row_val
         assert loc > 0 and loc <= 384, msg.format(loc)
     else:
@@ -204,21 +180,18 @@ def plate2robot_loc(row_val, col_val, plate_type='96-well'):
     return loc
 
 
-def add_dest(df_setup, dest_labware_index, dest_type='96-well'):
+def add_dest(df_setup, dest_labware, dest_type='96'):
     """Setting destination locations for samples & reagents
     Adding to df_conc:
       [dest_labware, dest_location]
     """
     # setting destination labware
-    try:
-        df_setup['dest_labware'] = dest_labware_index[dest_type]
-    except KeyError:
-        msg = 'Destination labware type "{}" not supported'
-        raise KeyError(msg.format(dest_type))
+    df_setup['dest_labware'] = dest_labware
     
     # setting destination location based on plate layout 
     func = lambda x: plate2robot_loc(x['row'], x['column'], plate_type=dest_type)
     df_setup['dest_location'] = df_setup.apply(func, 1)
+
 
 def reorder_384well(df, reorder_col):
     """Reorder values so that the odd, then the even locations are
@@ -232,7 +205,8 @@ def reorder_384well(df, reorder_col):
     df.index = range(df.shape[0])
     return df
 
-def pip_mastermix(df_setup, outFH, src_labware):
+
+def pip_mastermix(df_setup, outFH, src_labware, src_start=1, liq_cls='Water Free Single'):
     """Writing worklist commands for aliquoting mastermix.
     Using 1-asp-multi-disp with certain tips.
     """
@@ -256,16 +230,17 @@ def pip_mastermix(df_setup, outFH, src_labware):
         # making multi-disp object
         MD = Fluent.multi_disp()
         MD.SrcRackLabel = src_labware
-        MD.SrcPosition = i+1
+        MD.SrcPosition = src_start + i
         MD.DestRackLabel = df.dest_labware
         MD.DestPositions = df.dest_location
         MD.Volume = df['mm volume']
         MD.NoOfMultiDisp = n_disp
+        MD.LiquidClass = liq_cls
         # writing
         outFH.write(MD.cmd() + '\n')
 
 
-def pip_samples(df_setup, outFH):
+def pip_samples(df_setup, outFH, liq_cls='Water Contact Wet Single'):
     """Commands for aliquoting samples into distination plate
     """
     outFH.write('C;Samples\n')
@@ -282,7 +257,7 @@ def pip_samples(df_setup, outFH):
         asp.RackLabel = df.ix[i,'sample labware']
         asp.Position = df.ix[i,'sample location']
         asp.Volume = round(df.ix[i,'sample volume'], 2)
-        asp.LiquidClass = 'Water Contact Wet Single'
+        asp.LiquidClass = liq_cls
         outFH.write(asp.cmd() + '\n')
 
         # dispensing
@@ -290,13 +265,14 @@ def pip_samples(df_setup, outFH):
         disp.RackLabel = df.ix[i,'dest_labware']
         disp.Position = df.ix[i,'dest_location']
         disp.Volume = round(df.ix[i,'sample volume'], 2)
-        disp.LiquidClass = 'Water Contact Wet Single'
+        disp.LiquidClass = liq_cls
         outFH.write(disp.cmd() + '\n')
 
         # tip to waste
         outFH.write('W;\n')
 
-def pip_water(df_setup, outFH, src_labware):
+def pip_water(df_setup, outFH, src_labware, src_start=1, 
+              liq_cls='Water Contact Wet Single'):
     """Writing worklist commands for aliquoting water
     Using single asp-disp.
     """
@@ -310,9 +286,9 @@ def pip_water(df_setup, outFH, src_labware):
         # aspiration
         asp = Fluent.aspirate()
         asp.RackLabel = src_labware
-        asp.Position = 1
+        asp.Position = src_start
         asp.Volume = round(df.ix[i,'water volume'], 2)
-        asp.LiquidClass = 'Water Contact Wet Single'
+        asp.LiquidClass = liq_cls
         outFH.write(asp.cmd() + '\n')
 
         # dispensing
@@ -320,7 +296,7 @@ def pip_water(df_setup, outFH, src_labware):
         disp.RackLabel = df.ix[i,'dest_labware']
         disp.Position = df.ix[i,'dest_location']
         disp.Volume = round(df.ix[i,'water volume'], 2)
-        disp.LiquidClass = 'Water Contact Wet Single'
+        disp.LiquidClass = liq_cls
         outFH.write(disp.cmd() + '\n')
 
         # tip to waste
@@ -371,36 +347,38 @@ def main(args=None):
     # Input
     if args is None:
         args = parse_args()
-    check_args(args)
+#    check_args(args)
 
     # Load input table
     df_setup = load_setup(args.setup, 
                           file_format=args.format)
     check_df_setup(df_setup)
 
-    # adding sample source to setup table
-    edit_src_labware(df_setup, 
-                     src_type=args.srctype, 
-                     src_labware_index=args.srclabware)
-
     # adding sample/reagent destinations to setup table
-    add_dest(df_setup,
-             dest_type=args.desttype,
-             dest_labware_index=args.destlabware)
+    add_dest(df_setup, args.dest, dest_type=args.desttype)
         
-    # # Reordering dest if plate type is 384-well
-    if args.desttype == '384-well':
+    # Reordering dest if plate type is 384-well
+    if args.desttype == '384':
          df_setup = reorder_384well(df_setup, 'dest_location')
+    elif args.desttype == '96':
+        pass
+    else:
+        msg = 'Labware type "{}" not recognized'
+        raise ValueError(msg.format(args.desttype))
     
-    # # Writing out gwl file
+    # Writing out gwl file
     gwl_file = args.prefix + '.gwl'
     with open(gwl_file, 'w') as gwlFH:
         ## Master mix(es)
-        pip_mastermix(df_setup, outFH=gwlFH, src_labware='1x24 tube runner[001]')
+        pip_mastermix(df_setup, outFH=gwlFH, 
+                      src_labware=args.mm,
+                      src_start=args.mmloc, 
+                      liq_cls=args.mmliq)
         ## Samples
-        pip_samples(df_setup, outFH=gwlFH)
+        pip_samples(df_setup, outFH=gwlFH, liq_cls=args.sampliq)
         ## Water
-        pip_water(df_setup, outFH=gwlFH, src_labware='100ml_1_1')
+        pip_water(df_setup, outFH=gwlFH, src_labware=args.water, 
+                  src_start=args.waterloc, liq_cls=args.waterliq)
 
     # Creating report file
     report_file = args.prefix + '_report.txt'
