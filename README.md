@@ -31,6 +31,10 @@ Convert QIIME formatted mapping file to NGS library prep commands for the TECAN 
 
 Based on a table of sample concentrations, create TECAN robot commands for sample dilution.
 
+#### `qPCR_setup.py`
+
+Based on the plate layout of a qPCR experiment, create TECAN robot commands to set up the 
+PCR reactions by aliquoting samples and reagents into the final PCR plate. 
 
 ## Examples
 
@@ -41,6 +45,7 @@ Based on a table of sample concentrations, create TECAN robot commands for sampl
 * See the bash scripts in:
   * `./examples/map2robot/`
   * `./examples/dilute/`
+  * `./examples/qPCR_setup/`
 
 
 ## Installation
