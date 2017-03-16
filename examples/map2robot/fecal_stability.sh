@@ -8,5 +8,5 @@ map2robot.py --prefix /ebio/abt3_projects/databases/TECAN/worklists/fecal_stab_9
 
 # 394-well destination plate
 map2robot.py --prefix /ebio/abt3_projects/databases/TECAN/worklists/fecal_stab_384well \
-  --desttype 384-well \
+  --desttype 384 \
   $DIR/../../tests/data/mapping_file_fecal_stability.txt

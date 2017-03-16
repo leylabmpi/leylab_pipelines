@@ -30,13 +30,13 @@ class Test_Map2Robot_parser(unittest.TestCase):
     # args
     def test_parser_dest(self):
         # 96-well
-        args = Map2Robot.parse_args(['--desttype', '96-well',
+        args = Map2Robot.parse_args(['--desttype', '96',
                                      '--deststart', '97',
                                      'mapfile'])
         with self.assertRaises(ValueError):
             Map2Robot.check_args(args)
         # 384-well
-        args = Map2Robot.parse_args(['--desttype', '384-well',
+        args = Map2Robot.parse_args(['--desttype', '384',
                                      '--deststart', '389',
                                      'mapfile'])
         with self.assertRaises(ValueError):
@@ -106,14 +106,13 @@ class Test_Map2Robot_addDest(unittest.TestCase):
 
     # adding destination
     def test_load_map_txt(self):
-        self.df_map = Map2Robot.add_dest(self.df_map, self.args.destlabware)
+        self.df_map = Map2Robot.add_dest(self.df_map, self.args.dest)
         self.assertTrue(isinstance(self.df_map, pd.DataFrame))
-
 
     # destination start offset
     def test_load_map_deststart(self):
         self.df_map = Map2Robot.add_dest(self.df_map,
-                                         self.args.destlabware,
+                                         self.args.dest,
                                          dest_start=49)
 
         self.assertTrue(isinstance(self.df_map, pd.DataFrame))
@@ -125,7 +124,7 @@ class Test_Map2Robot_destStart384(unittest.TestCase):
 
     def setUp(self):
         mapfile = os.path.join(data_dir, 'mapping_file_fecal_stability.txt')
-        self.args = Map2Robot.parse_args(['--desttype', '384-well', mapfile])
+        self.args = Map2Robot.parse_args(['--desttype', '384', mapfile])
         Map2Robot.check_args(self.args)
         self.df_map = Map2Robot.map2df(self.args.mapfile)
 
@@ -135,7 +134,7 @@ class Test_Map2Robot_destStart384(unittest.TestCase):
 
     def test_load_map_deststart384(self):
         self.df_map = Map2Robot.add_dest(self.df_map,
-                                         self.args.destlabware,
+                                         self.args.dest,
                                          dest_type=self.args.desttype,
                                          dest_start=200)
         self.assertTrue(isinstance(self.df_map, pd.DataFrame))
@@ -144,7 +143,7 @@ class Test_Map2Robot_destStart384(unittest.TestCase):
 
     def test_load_map_deststart384_2(self):
         self.df_map = Map2Robot.add_dest(self.df_map,
-                                         self.args.destlabware,
+                                         self.args.dest,
                                          dest_type=self.args.desttype,
                                          dest_start=370)
         self.assertTrue(isinstance(self.df_map, pd.DataFrame))
@@ -158,7 +157,7 @@ class Test_Map2Robot_destStart384(unittest.TestCase):
 
     # destination location reorder for 384-well plates
     def test_load_map_destreorder(self):
-        self.df_map = Map2Robot.add_dest(self.df_map, self.args.destlabware)
+        self.df_map = Map2Robot.add_dest(self.df_map, self.args.dest)
         self.df_map = Map2Robot.reorder_384well(self.df_map, 'TECAN_dest_location')
 
         self.assertTrue(isinstance(self.df_map, pd.DataFrame))
@@ -177,9 +176,9 @@ class Test_Map2Robot_pipMasterMix(unittest.TestCase):
         Map2Robot.check_args(self.args)
         self.df_map = Map2Robot.map2df(self.args.mapfile)
         self.df_map = Map2Robot.add_dest(self.df_map,
-                                         self.args.destlabware,
+                                         self.args.dest,
                                          dest_type=self.args.desttype)
-        if self.args.desttype == '384-well':
+        if self.args.desttype == '384':
             self.df_map = reorder_384well(self.df_map, 'TECAN_dest_location')
         self.gwl = '/tmp/MM.gwl'
         self.gwlFH = open(self.gwl, 'w')

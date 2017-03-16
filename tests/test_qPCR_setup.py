@@ -62,7 +62,7 @@ class Test_qPCR_main1(unittest.TestCase):
 
     def setUp(self):
         infile = os.path.join(data_dir, 'qPCR_setup/qPCR_Zach_plate1.xlsx')
-        args = QPCR.parse_args([infile])
+        args = QPCR.parse_args(['--prefix', '/tmp/qPCR', infile])
         self.files = QPCR.main(args)
 
     def tearDown(self):
