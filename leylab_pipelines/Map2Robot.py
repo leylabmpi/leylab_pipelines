@@ -286,7 +286,7 @@ def pip_mastermix(df_map, outFH, mmvolume=13.1, mmtube=1, liq_cls='Water Free Si
     MD.DestPositions = df_map.ix[:,'TECAN_dest_location']
     MD.Volume = mmvolume
     MD.LiquidClass = liq_cls
-    MD.NoOfMultiDisp = int(np.floor(180 / mmvolume))  # using 200 ul tips
+    MD.NoOfMultiDisp = int(np.floor(160 / mmvolume))  # using 200 ul tips
 
     outFH.write(MD.cmd() + '\n')
 
