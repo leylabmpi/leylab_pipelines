@@ -266,7 +266,7 @@ def reorder_384well(df, reorder_col):
     return df
 
 
-def pip_mastermix(df_map, outFH, liq_cls, mmvolume=13.1, mmtube=1):
+def pip_mastermix(df_map, outFH, mmvolume=13.1, mmtube=1, liq_cls='Water Free Single'):
     """Writing worklist commands for aliquoting mastermix.
     Using 1-asp-multi-disp with 200 ul tips.
     Method:
@@ -291,7 +291,7 @@ def pip_mastermix(df_map, outFH, liq_cls, mmvolume=13.1, mmtube=1):
     outFH.write(MD.cmd() + '\n')
 
 
-def pip_nonbarcode_primer(df_map, outFH, volume, tube, liq_cls):
+def pip_nonbarcode_primer(df_map, outFH, volume, tube, liq_cls='Water Free Single'):
     """Pipetting primers from tube.
     Assuming primer is aliquoted to all samples
     df_map : mapping file dataframe
@@ -322,8 +322,8 @@ def pip_nonbarcode_primer(df_map, outFH, volume, tube, liq_cls):
         # tip to waste
         outFH.write('W;\n')
 
-def pip_primers(df_map, outFH, liq_cls, fp_volume=0, rp_volume=0,
-                fp_tube=0, rp_tube=0):
+def pip_primers(df_map, outFH, fp_volume=0, rp_volume=0,
+                fp_tube=0, rp_tube=0, liq_cls='Water Free Single'):
     """Commands for aliquoting primers
     """
     outFH.write('C;Primers\n')
@@ -363,7 +363,7 @@ def pip_primers(df_map, outFH, liq_cls, fp_volume=0, rp_volume=0,
         # tip to waste
         outFH.write('W;\n')
 
-def pip_samples(df_map, outFH, liq_cls):
+def pip_samples(df_map, outFH, liq_cls='Water Free Single'):
     """Commands for aliquoting samples to each PCR rxn
     """
     outFH.write('C;Samples\n')
@@ -388,8 +388,8 @@ def pip_samples(df_map, outFH, liq_cls):
         # tip to waste
         outFH.write('W;\n')
 
-def pip_water(df_map, outFH, liq_cls, pcr_volume=25.0,
-              mm_volume=13.1, fp_volume=2.0, rp_volume=2.0):
+def pip_water(df_map, outFH, pcr_volume=25.0, mm_volume=13.1, 
+              fp_volume=2.0, rp_volume=2.0, liq_cls='Water Free Single'):
     """Commands for aliquoting water to each PCR rxn
     """
     outFH.write('C;Water\n')

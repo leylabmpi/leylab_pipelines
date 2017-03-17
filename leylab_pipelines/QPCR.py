@@ -222,10 +222,10 @@ def pip_mastermix(df_setup, outFH, src_labware, src_start=1, liq_cls='Water Free
         
         # determing how many multi-disp
         max_vol = max(df['mm volume'])
-        if max_vol > 180:
-            n_disp = int(np.floor(900 / max_vol))  # using 1000 ul tips
+        if max_vol > 160.0:
+            n_disp = int(np.floor(900.0 / max_vol))  # using 1000 ul tips
         else:
-            n_disp= int(np.floor(180 / max_vol))   # using 200 ul tips
+            n_disp= int(np.floor(160.0 / max_vol))   # using 200 ul tips
 
         # making multi-disp object
         MD = Fluent.multi_disp()
