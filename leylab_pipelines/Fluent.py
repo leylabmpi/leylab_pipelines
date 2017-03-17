@@ -187,6 +187,7 @@ class multi_disp():
                 disp.Volume = round(self.Volumes[i+ii], 2)
                 disp.LiquidClass = self.LiquidClass
                 steps.append(disp.cmd())
+            steps.append('W;')
                 
         return '\n'.join(steps)
 
