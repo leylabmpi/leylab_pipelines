@@ -30,7 +30,7 @@ setup(
     long_description=long_desc + '\n\n' + history,
     author="Nick Youngblut",
     author_email='nyoungb2@gmail.com',
-    url='https://github.com/nick-youngblut/leylab_pipelines',
+    url='https://github.com/leylabmpi/leylab_pipelines',
     packages=[
         'leylab_pipelines',
     ],
@@ -42,8 +42,6 @@ setup(
     zip_safe=False,
     keywords='leylab_pipelines',
     classifiers=[
-        'Development Status :: 2 - Pre-Alpha',
-        'Intended Audience :: Developers',
         'License :: OSI Approved :: MIT License',
         'Natural Language :: English',
         "Programming Language :: Python :: 2",
