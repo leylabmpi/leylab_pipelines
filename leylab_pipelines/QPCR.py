@@ -16,9 +16,13 @@ from leylab_pipelines import Fluent
 
 
 # functions
-def parse_args(test_args=None):
-    # desc
+def get_desc():
     desc = 'Create robot commands for qPCR setup'
+    return desc
+
+def parse_args(test_args=None, subparsers=None):
+    # desc
+    desc = get_desc()
     epi = """DESCRIPTION:
     Create a worklist file for the TECAN Fluent robot for qPCR setup.
     The input is an exported plate layout from the BioRad qPCR software.
@@ -37,8 +41,12 @@ def parse_args(test_args=None):
     * The setup file (input table) MUST have a header (capitalization doesn't matter)
     * All volumes are in ul.
     """
-    parser = argparse.ArgumentParser(description=desc, epilog=epi,
-                                     formatter_class=argparse.RawTextHelpFormatter)
+    if subparsers:
+        parser = subparsers.add_parser('qPCR', description=desc, epilog=epi,
+                                       formatter_class=argparse.RawTextHelpFormatter)
+    else:
+        parser = argparse.ArgumentParser(description=desc, epilog=epi,
+                                         formatter_class=argparse.RawTextHelpFormatter)
 
     # args
     ## I/O
@@ -81,9 +89,7 @@ def parse_args(test_args=None):
     # parse & return
     if test_args:
         args = parser.parse_args(test_args)
-    else:
-        args = parser.parse_args()
-    return args
+        return args
 
 
 def check_args(args):

@@ -15,9 +15,14 @@ from leylab_pipelines import Fluent
 
 
 # functions
-def parse_args(test_args=None):
-    # desc
+def get_desc():
     desc = 'Convert a mapping file to a NGS amplicon worklist file for the TECAN robot'
+    return desc
+
+def parse_args(test_args=None, subparsers=None):
+    # desc
+    #desc = 'Convert a mapping file to a NGS amplicon worklist file for the TECAN robot'
+    desc = get_desc
     epi = """DESCRIPTION:
     Convert a QIIME-formatted mapping file to a GWL file, which is used by the TECAN
     robot to conduct the NGS amplicon PCR prep (ie., combining MasterMix, primers, samples, etc).
@@ -45,8 +50,12 @@ def parse_args(test_args=None):
     * Plate well locations are 1 to n-wells; numbering by column
     * PicoGreen should be added to the MasterMix *prior* to loading on robot
     """
-    parser = argparse.ArgumentParser(description=desc, epilog=epi,
-                                     formatter_class=argparse.RawTextHelpFormatter)
+    if subparsers:
+        parser = subparsers.add_parser('map2robot', description=desc, epilog=epi,
+                                       formatter_class=argparse.RawTextHelpFormatter)
+    else:
+        parser = argparse.ArgumentParser(description=desc, epilog=epi,
+                                         formatter_class=argparse.RawTextHelpFormatter)
 
     # args
     ## I/O
@@ -106,12 +115,10 @@ def parse_args(test_args=None):
     misc.add_argument('--errorperc', type=float, default=10.0,
                         help='Percent of extra total reagent volume to include (default: %(default)s)')
 
-    # parse & return
+    # running test args
     if test_args:
         args = parser.parse_args(test_args)
-    else:
-        args = parser.parse_args()
-    return args
+        return args
 
 
 def check_args(args):

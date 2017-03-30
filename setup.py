@@ -15,7 +15,8 @@ test_requirements = [
     # TODO: put package test requirements here
 ]
 
-scripts = glob.glob('scripts/*.py')
+#scripts = glob.glob('scripts/TECAN')
+scripts = ['scripts/TECAN']
 
 long_desc = """
 General bioinformatic pipelines associated with the Ley Lab at the MPI in Tuebingen.

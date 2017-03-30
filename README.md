@@ -21,20 +21,9 @@ leylab_pipelines
 
 [[top](#sections)]
 
-### TECAN robot helper scripts
+### TECAN robot helper commands
 
-#### `map2robot.py`
-
-Convert QIIME formatted mapping file to NGS library prep commands for the TECAN robot. 
-
-#### `dilute.py`
-
-Based on a table of sample concentrations, create TECAN robot commands for sample dilution.
-
-#### `qPCR_setup.py`
-
-Based on the plate layout of a qPCR experiment, create TECAN robot commands to set up the 
-PCR reactions by aliquoting samples and reagents into the final PCR plate. 
+For commands: install, then use `TECAN -h`
 
 ## Examples
 
@@ -43,9 +32,7 @@ PCR reactions by aliquoting samples and reagents into the final PCR plate.
 ### TECAN robot helper scripts
 
 * See the bash scripts in:
-  * `./examples/map2robot/`
-  * `./examples/dilute/`
-  * `./examples/qPCR_setup/`
+  * `./examples/`
 
 
 ## Installation
