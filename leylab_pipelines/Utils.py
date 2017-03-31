@@ -4,6 +4,7 @@
 from __future__ import print_function
 import os
 import sys
+import logging
 import numpy as np
 
 # functions
@@ -71,6 +72,28 @@ def to_win(file_name, suffix='_win'):
             line = line.replace('\n', '\r\n')
             outFH.write(line)
     return out_file
+
+
+def backup_file(f):
+    """
+    Back up a file, old_file will be renamed to #old_file.n#, where n is a
+    number incremented each time a backup takes place
+    """
+    if os.path.exists(f):
+        dirname = os.path.dirname(f)
+        basename = os.path.basename(f)
+        count = 1
+        rn_to = os.path.join(
+            dirname, '#' + basename + '.{0}#'.format(count))
+        while os.path.exists(rn_to):
+            count += 1
+            rn_to = os.path.join(
+                dirname, '#' + basename + '.{0}#'.format(count))
+        logging.info("Backing up {0} to {1}".format(f, rn_to))
+        os.rename(f, rn_to)
+        return rn_to
+    else:
+        logging.warning('{0} doesn\'t exist'.format(f))
 
 # main
 if __name__ == '__main__':

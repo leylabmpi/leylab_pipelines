@@ -16,7 +16,7 @@ test_requirements = [
 ]
 
 #scripts = glob.glob('scripts/TECAN')
-scripts = ['scripts/TECAN']
+scripts = ['scripts/TECAN', 'scripts/DB']
 
 long_desc = """
 General bioinformatic pipelines associated with the Ley Lab at the MPI in Tuebingen.
