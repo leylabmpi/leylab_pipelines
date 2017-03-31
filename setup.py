@@ -8,6 +8,7 @@ with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
 requirements = [
+    'numpy',
     'pandas'
 ]
 
@@ -15,7 +16,6 @@ test_requirements = [
     # TODO: put package test requirements here
 ]
 
-#scripts = glob.glob('scripts/TECAN')
 scripts = ['scripts/TECAN', 'scripts/DB']
 
 long_desc = """
@@ -30,7 +30,7 @@ setup(
     description="General bioinformatic pipelines associated with the Ley Lab at the MPI in Tuebingen",
     long_description=long_desc + '\n\n' + history,
     author="Nick Youngblut",
-    author_email='nyoungb2@gmail.com',
+    author_email='leylabmpi@gmail.com',
     url='https://github.com/leylabmpi/leylab_pipelines',
     packages=[
         'leylab_pipelines',
@@ -43,10 +43,7 @@ setup(
     zip_safe=False,
     keywords='leylab_pipelines',
     classifiers=[
-        'License :: OSI Approved :: MIT License',
-        'Natural Language :: English',
         "Programming Language :: Python :: 2",
-        'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.3',
