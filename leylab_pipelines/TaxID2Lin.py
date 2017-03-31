@@ -177,8 +177,6 @@ def find_lineage(tax_id):
 def get_taxdump(url, outDir=None):
     """Getting taxdump file from NCBI. 
     Saving to a temporary directory. 
-
-    ftp://ftp.ncbi.nih.gov/pub/taxonomy/taxdump.tar.gz
     """
     logging.info('downloading NCBI taxonomy dump...')
     
@@ -218,19 +216,6 @@ def main(args=None):
     if args is None:
         args = parse_args()
 
-#    print( int(args.procs).__class__ ); 
-#    print( multiprocessing.cpu_count().__class__ );
-#    exit()
-
-#    ncpus = multiprocessing.cpu_count()
-#    ncpus = int(args.procs)
-#    logging.info('using {0} cpus to find lineages for all tax ids'.format(ncpus))
-#    pool = multiprocessing.Pool(ncpus)
-#    pool.close()
-    
-#    exit;
-#    sys.exit;
-
     # data downloaded from ftp://ftp.ncbi.nih.gov/pub/taxonomy/
     if args.outdir is not None or args.nodes is None or args.names is None:
         files = get_taxdump(args.url, args.outdir)
@@ -252,7 +237,6 @@ def main(args=None):
     logging.info('generating TAXONOMY_DICT...')
     TAXONOMY_DICT = dict(zip(df.tax_id.values, df.to_dict('records')))
 
-#    ncpus = multiprocessing.cpu_count()
     ncpus = int(args.procs)
     logging.info('using {0} cpus to find lineages for all tax ids'.format(ncpus))
     pool = multiprocessing.Pool(ncpus)

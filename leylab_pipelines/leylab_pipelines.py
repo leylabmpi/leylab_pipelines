@@ -11,6 +11,7 @@ from leylab_pipelines import Map2Robot
 from leylab_pipelines import Dilute
 from leylab_pipelines import QPCR
 ### DB
+from leylab_pipelines import Acc2TaxID
 from leylab_pipelines import TaxID2Lin
 
 
@@ -51,6 +52,7 @@ def DB_arg_parse():
   desc = 'Tools for working with public databases' 
   # subcommand descriptions
   epi = 'SUBCOMMANDS:\n'
+  epi = epi + '  acc2taxID - ' + Acc2TaxID.get_desc() + '\n'
   epi = epi + '  taxID2lin - ' + TaxID2Lin.get_desc() + '\n'
   
   # main command arg parser
@@ -60,13 +62,15 @@ def DB_arg_parse():
   # subparsers
   subparsers = parser.add_subparsers(dest='subparser_name')
   parser_taxID2lin = TaxID2Lin.parse_args(subparsers=subparsers)
-
+  parser_acc2taxID = Acc2TaxID.parse_args(subparsers=subparsers)
   # parsing args
   args = parser.parse_args()
   
   # running function
   if args.subparser_name == 'taxID2lin':
     TaxID2Lin.main(args)
+  if args.subparser_name == 'acc2taxID':
+    Acc2TaxID.main(args)
   else:
     msg = 'Command not recognized: "{}"'
     raise ValueError(msg.format(args.subparser_name))
