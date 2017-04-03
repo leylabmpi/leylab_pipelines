@@ -38,11 +38,19 @@ def parse_args(test_args=None, subparsers=None):
                                          formatter_class=argparse.RawTextHelpFormatter)
 
     # args
-    parser.add_argument('-i', '--input', default=None, nargs='+',
+    parser.add_argument('accessions', metavar='accessions', type=str,
+                        help='Input table containing the acessions. Use "-" for STDIN')
+    parser.add_argument('-c', '--column', default=1,
+                        help='Column number containing the accessions (default: %(default)s)')
+    parser.add_argument('-s', '--sep', default='\t',
+                        help='Column separator (default: %(default)s)')
+    parser.add_argument('-x', '--no-header', default=False, action='store_true',
+                        help='No header in input table (default: %(default)s)')
+    parser.add_argument('-t', '--tax', default=None, nargs='+',
                         help='>=1 NCBI taxonomy file name (default: %(default)s)') 
     parser.add_argument('-u', '--url', default='ftp://ftp.ncbi.nih.gov/pub/taxonomy/accession2taxid/',
                         help='Base url for downloading the NCBI taxonomy files (default: %(default)s)')
-    parser.add_argument('-t', '--types', default=['gb','wgs'],
+    parser.add_argument('-T', '--types', default=['gb','wgs'], nargs='+',
                         help='>=1 DBs to download if no input files provided (default: %(default)s)') 
     parser.add_argument('-o', '--outfile', default='NCBI_taxID2lin.txt',
                         help='Output file for lineage table (default: %(default)s)')
@@ -57,74 +65,99 @@ def parse_args(test_args=None, subparsers=None):
         return args
 
 
+def load_acc_df(infile, sep='\t', no_header=False):
+    logging.info('loading accessions...')
 
-def get_db(base_url, DBs, outDir=None):
+    if no_header is True:
+        header = None
+    else:
+        header = 0
+    if infile == '-':
+        df = pd.read_csv(sys.stdin, sep=sep, header=header)
+    else:
+        df = pd.read_csv(infile, sep=sep, header=header)
+    return df
+
+
+def make_db_url(base_url, db):
+    # urls for DB files to download
+    DB_psbl = {'wgs' : 'nucl_wgs.accession2taxid.gz',
+               'gb' : 'nucl_est.accession2taxid.gz',
+               'est' : 'nucl_est.accession2taxid.gz',
+               'gss' : 'nucl_gss.accession2taxid.gz'}
+    
+    try:
+        x = DB_psbl[db]
+    except KeyError:
+        raise KeyError('DB type "{}" not recognized'.format(db))
+    url = base_url + '/' + x 
+    return [url, x]
+
+
+def download_file(url, fileName, outDir=None):
+    if outDir is None:
+        outDir = tempfile.gettempdir()
+    dbFile = os.path.join(outDir, fileName)
+
+    if sys.version_info[0] >= 3:
+        dbFile, headers = urllib.request.urlretrieve(url, filename=dbFile)
+    else:
+        dbFile, headers = urllib.urlretrieve(url, filename=dbFile)        
+
+    logging.info('downloaded file: {}'.format(dbFile))
+    return dbFile
+
+    
+
+def get_tax_db(base_url, DBs, outDir=None):
     """Getting NCBI DB file
     Saving to a temporary directory by default
     """
     logging.info('downloading NCBI taxonomy dump...')
     
-    # urls for DB files to download
-    DB_psbl = {'wgs' = 'nucl_wgs.accession2taxid.gz',
-               'gb' = 'nucl_est.accession2taxid.gz',
-               'est' = 'nucl_est.accession2taxid.gz',
-               'gss' = 'nucl_gss.accession2taxid.gz')
+    # url(s)
+    urls = [make_db_url(base_url, x) for x in DBs]
 
     # downloading
-    if outDir:
-        # saving taxdump
-        dmpFile = os.path.join(outDir, 'taxdump.tar.gz')
-    else:
-        # taxdump written to temporary directory
-        outDir = tempfile.gettempdir()
-        dmpFile = None
-    if sys.version_info[0] >= 3:
-        dmpFile, headers = urllib.request.urlretrieve(url, filename=dmpFile)
-    else:
-        dmpFile, headers = urllib.urlretrieve(url, filename=dmpFile)        
-            
-    # uncompressing
-    logging.info('uncompressing NCBI taxonomy dump file...')
-    tar = tarfile.open(dmpFile, "r:gz")
-    tar.extractall(path=outDir)
-    tar.close()
-    logging.info('files uncompressed to: {}'.format(outDir))
-
-    # target file names
-    files = {'nodes' : os.path.join(outDir, 'nodes.dmp'),
-             'names' : os.path.join(outDir, 'names.dmp')}
+    dmpFiles = [download_file(url[0], url[1], outDir) for url in urls]
+                
     ## checking for existence
-    for k,v in files.items():
-        if not os.path.isfile:
-            raise ValueError('Cannot find file: {}'.format(v))
-    # ret
-    return files
+    for F in dmpFiles:
+        if not os.path.isfile(F):
+            raise ValueError('Cannot find file: {}'.format(F))
+
+    return dmpFiles
     
 
-#--- getting taxIDs ---#
+def acc_to_taxID(db_file, df_acc, column=1):
+    # accs 
+    column = int(column) - 1
+    accs = set(df_acc.iloc[:,column])
+    # determining taxonomic IDs
+    if db_file.endswith('.gz'):
+        inF = gzip.open(db_file, 'rb') 
+    else:
+        inF =  open(db_file, 'r') 
+    taxIDs = np.empty(df_acc.shape[0])
+    for i,line in enumerate(inF):
+        line = line.rstrip().split('\t')
+        if line[0] in accs:
+            taxIDs[i] = line[2])
+r# # add column to df
 
-# # determining taxonomic IDs
-# accs = list(seqs['accession'])
-# taxIDs = []
-# with gzip.open(acc2taxID, 'rb') as inF:
-#     for line in inF:
-#         line = line.rstrip().split('\t')
-#         if line[0] in accs:
-#             taxIDs.append(line[2])
-#         else:
-#             taxIDs.append(None)
-
-# taxIDs[0:3]
 
 def main(args=None):
     # Input
     if args is None:
         args = parse_args()
 
+    # load accessions
+    df_acc = load_acc_df(args.accessions, args.sep, args.no_header)
+
     # data downloaded from ftp://ftp.ncbi.nih.gov/pub/taxonomy/
-    if args.outdir is not None or args.files is None:
-        print('test')
-#        files = get_taxdump(args.url, args.outdir)
-#        args.nodes = files['nodes']
-#        args.names = files['names']
-        
+    if args.outdir is not None or args.tax is None:
+        args.tax = get_tax_db(args.url, args.types, args.outdir)
+
+    # getting taxIDs for accessions
+    for db_file in args.tax:
+        acc_to_taxID(db_file, df_acc, column=args.column)

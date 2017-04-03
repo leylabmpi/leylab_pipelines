@@ -205,7 +205,7 @@ def get_taxdump(url, outDir=None):
              'names' : os.path.join(outDir, 'names.dmp')}
     ## checking for existence
     for k,v in files.items():
-        if not os.path.isfile:
+        if not os.path.isfile(v):
             raise ValueError('Cannot find file: {}'.format(v))
     # ret
     return files
