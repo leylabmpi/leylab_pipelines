@@ -47,17 +47,22 @@ def parse_args(test_args=None, subparsers=None):
                                          formatter_class=argparse.RawTextHelpFormatter)
 
     # args
-    parser.add_argument('--nodes', default=None,
+    io = parser.add_argument_group('File input/output')
+    io.add_argument('--nodes', default=None,
                         help='nodes.dmp file path. (default: %(default)s)')
-    parser.add_argument('--names', default=None,
+    io.add_argument('--names', default=None,
                         help='names.dmp file path. (default: %(default)s)')
-    parser.add_argument('-u', '--url', default='ftp://ftp.ncbi.nih.gov/pub/taxonomy/taxdump.tar.gz',
-                        help='URL for downloading taxonomy dump. (default: %(default)s)')
-    parser.add_argument('-o', '--outfile', default='NCBI_taxID2lin.txt',
+    io.add_argument('-o', '--outfile', default='NCBI_taxID2lin.txt',
                         help='Output file for lineage table (default: %(default)s)')
-    parser.add_argument('-d', '--outdir', default=None,
+
+    dmp = parser.add_argument_group('Taxonomy dump')
+    dmp.add_argument('-u', '--url', default='ftp://ftp.ncbi.nih.gov/pub/taxonomy/taxdump.tar.gz',
+                        help='URL for downloading taxonomy dump. (default: %(default)s)')
+    dmp.add_argument('-d', '--outdir', default=None,
                         help='Output directory for the taxonomy dump download. (default: %(default)s)')
-    parser.add_argument('-p', '--procs', default=1,
+
+    misc = parser.add_argument_group('Misc')
+    misc.add_argument('-p', '--procs', default=1,
                         help='Number of processors to use. (default: %(default)s)')
 
     # running test args
