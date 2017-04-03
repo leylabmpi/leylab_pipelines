@@ -2,6 +2,7 @@
 ## batteries
 import re
 import os
+import io
 import sys
 import gzip
 import tempfile
@@ -9,6 +10,7 @@ import argparse
 import logging
 import urllib
 ## 3rd party
+import numpy as np
 import pandas as pd
 ## package
 from leylab_pipelines import Utils 
@@ -38,26 +40,31 @@ def parse_args(test_args=None, subparsers=None):
                                          formatter_class=argparse.RawTextHelpFormatter)
 
     # args
-    parser.add_argument('accessions', metavar='accessions', type=str,
-                        help='Input table containing the acessions. Use "-" for STDIN')
-    parser.add_argument('-c', '--column', default=1,
-                        help='Column number containing the accessions (default: %(default)s)')
-    parser.add_argument('-s', '--sep', default='\t',
-                        help='Column separator (default: %(default)s)')
-    parser.add_argument('-x', '--no-header', default=False, action='store_true',
-                        help='No header in input table (default: %(default)s)')
-    parser.add_argument('-t', '--tax', default=None, nargs='+',
-                        help='>=1 NCBI taxonomy file name (default: %(default)s)') 
-    parser.add_argument('-u', '--url', default='ftp://ftp.ncbi.nih.gov/pub/taxonomy/accession2taxid/',
-                        help='Base url for downloading the NCBI taxonomy files (default: %(default)s)')
-    parser.add_argument('-T', '--types', default=['gb','wgs'], nargs='+',
-                        help='>=1 DBs to download if no input files provided (default: %(default)s)') 
-    parser.add_argument('-o', '--outfile', default='NCBI_taxID2lin.txt',
-                        help='Output file for lineage table (default: %(default)s)')
-    parser.add_argument('-d', '--outdir', default=None,
-                        help='Output directory for the taxonomy dump download. (default: %(default)s)')
-    parser.add_argument('-p', '--procs', default=1,
-                        help='Number of processors to use. (default: %(default)s)')
+    acc = parser.add_argument_group('Accessions')
+    acc.add_argument('accessions', metavar='accessions', type=str,
+                     help='Input table containing the acessions, "-" if from STDIN')
+    acc.add_argument('-c', '--column', default=1,
+                     help='Column number containing the accessions (default: %(default)s)')
+    acc.add_argument('-s', '--sep', default='\t',
+                     help='Column separator (default: %(default)s)')
+    acc.add_argument('-x', '--no-header', default=False, action='store_true',
+                     help='No header in input table (default: %(default)s)')
+    acc.add_argument('-o', '--outfile', default='-',
+                     help='Output file name; "-" if to STDOUT (default: %(default)s)')
+
+    tax = parser.add_argument_group('Taxonomy database')
+    tax.add_argument('-t', '--tax', default=None, nargs='+',
+                     help='>=1 NCBI taxonomy file name (default: %(default)s)') 
+    tax.add_argument('-u', '--url', default='ftp://ftp.ncbi.nih.gov/pub/taxonomy/accession2taxid/',
+                     help='Base url for downloading the NCBI taxonomy files (default: %(default)s)')
+    tax.add_argument('-T', '--types', default=['gb','wgs'], nargs='+',
+                     help='>=1 DBs to download if no input files provided (default: %(default)s)') 
+    tax.add_argument('-d', '--outdir', default=None,
+                     help='Output directory for the taxonomy dump download. (default: %(default)s)')
+
+    misc = parser.add_argument_group('Misc')
+    misc.add_argument('-p', '--procs', default=1,
+                     help='Number of processors to use. (default: %(default)s)')
 
     # running test args
     if test_args:
@@ -108,7 +115,6 @@ def download_file(url, fileName, outDir=None):
     return dbFile
 
     
-
 def get_tax_db(base_url, DBs, outDir=None):
     """Getting NCBI DB file
     Saving to a temporary directory by default
@@ -130,20 +136,49 @@ def get_tax_db(base_url, DBs, outDir=None):
     
 
 def acc_to_taxID(db_file, df_acc, column=1):
+    logging.info('mapping accessions with file: {}'.format(db_file))
+
     # accs 
     column = int(column) - 1
-    accs = set(df_acc.iloc[:,column])
+#    accs = np.array(df_acc.iloc[:,column], dtype=object)
+    accs = df_acc.iloc[:,column].tolist()
     # determining taxonomic IDs
     if db_file.endswith('.gz'):
-        inF = gzip.open(db_file, 'rb') 
+        inF = gzip.open(db_file, 'rt') 
     else:
         inF =  open(db_file, 'r') 
-    taxIDs = np.empty(df_acc.shape[0])
+    taxIDs = np.empty(df_acc.shape[0], dtype=object)
+    accs_len = len(accs)
     for i,line in enumerate(inF):
+        if (i+1) % 1000000 == 0:
+            logging.info('Number of DB records processed: {}'.format(i+1))
         line = line.rstrip().split('\t')
-        if line[0] in accs:
-            taxIDs[i] = line[2])
-r# # add column to df
+        for i in range(accs_len):
+            if accs[i] == line[0]:
+                taxIDs[i] = line[2]
+                continue
+
+#    for i,line in enumerate(inF):
+#        line = line.rstrip().split('\t')
+#        taxIDs[accs == line[0]] = line[2]
+#        if (i+1) % 1000000 == 0:
+#            logging.info('Number of DB records processed: {}'.format(i+1))
+
+    return taxIDs
+
+
+def which_taxID(x):
+    for y in x:
+        if y is not None:
+            return y
+    return None
+        
+
+def write_table(df, outFile, no_header, sep='\t'):
+    header = no_header == False
+    if outFile == '-':
+        outFile = sys.stdout
+    df.to_csv(outFile, sep=sep, header=header, index=False)
 
 
 def main(args=None):
@@ -152,12 +187,18 @@ def main(args=None):
         args = parse_args()
 
     # load accessions
-    df_acc = load_acc_df(args.accessions, args.sep, args.no_header)
+    df_acc = load_acc_df(args.accessions, args.sep, no_header=args.no_header)
 
     # data downloaded from ftp://ftp.ncbi.nih.gov/pub/taxonomy/
     if args.outdir is not None or args.tax is None:
         args.tax = get_tax_db(args.url, args.types, args.outdir)
 
     # getting taxIDs for accessions
-    for db_file in args.tax:
-        acc_to_taxID(db_file, df_acc, column=args.column)
+    taxIDs = [acc_to_taxID(db_file, df_acc, column=args.column) for db_file in args.tax]
+    taxIDs = np.array(taxIDs)
+
+    # taking not None taxID
+    df_acc['TaxID'] = np.apply_along_axis(which_taxID, 0, taxIDs) 
+
+    # writing out file
+    write_table(df_acc, outFile=args.outfile, no_header=args.no_header, sep=args.sep)
