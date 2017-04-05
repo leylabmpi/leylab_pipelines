@@ -113,12 +113,12 @@ def parse_dtype(dtype_str, join_on):
     return dtypes
 
 
-def get_table(infile, sep='\t'):
+def get_table(infile, sep='\t', dtype=None):
     if infile.endswith('.gz'):
         compression = 'gzip'
     else:
         compression = None
-    df = dd.read_csv(infile, sep=sep, compression=compression)
+    df = dd.read_csv(infile, sep=sep, dtype=dtype, compression=compression)
     return(df)
 
 
@@ -159,8 +159,8 @@ def main(args=None):
     args.dtypeR = parse_dtype(args.dtypeR, join_on['right'])
 
     # creating table objects
-    df1 = get_table(args.table[0], sep=args.sep)
-    df2 = get_table(args.table[1], sep=args.sep)
+    df1 = get_table(args.table[0], sep=args.sep, dtype=args.dtypeL)
+    df2 = get_table(args.table[1], sep=args.sep, dtype=args.dtypeR)
 
     # joining (merging)
     df = dd.merge(df1, df2, left_on=join_on['left'], right_on=join_on['right'], how=args.how) #, npartitions=args.procs)

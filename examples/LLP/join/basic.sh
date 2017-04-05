@@ -12,3 +12,9 @@ LLP join --join accession=accession --how left $DATADIR/accessions_col3.gz $DATA
 
 echo "# Input: same table; inner join on 2 columns"
 LLP join --join accession=accession,OTU=OTU --how left $DATADIR/accessions_col3.txt $DATADIR/accessions_col3.txt
+
+echo "# Input: same table; inner join on 1 column with float dtype"
+LLP join --join abundance=abundance --how left -L float -R float $DATADIR/accessions_col3.txt $DATADIR/accessions_col3.txt
+
+echo "# Input: same table; inner join on 1 column with object dtype"
+LLP join --join abundance=abundance --how left $DATADIR/accessions_col3.txt $DATADIR/accessions_col3.txt
