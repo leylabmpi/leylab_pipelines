@@ -69,7 +69,7 @@ def DB_arg_parse():
   # running function
   if args.subparser_name == 'taxID2lin':
     TaxID2Lin.main(args)
-  if args.subparser_name == 'acc2taxID':
+  elif args.subparser_name == 'acc2taxID':
     Acc2TaxID.main(args)
   else:
     msg = 'Command not recognized: "{}"'

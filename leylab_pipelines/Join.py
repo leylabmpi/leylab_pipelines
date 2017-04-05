@@ -17,7 +17,7 @@ logging.basicConfig(
 
 # functions
 def get_desc():
-    desc = 'Get NCBI taxonomy IDs from NCBI accessions'
+    desc = 'Fast table join (in parallel)'
     return desc
 
 def parse_args(test_args=None, subparsers=None):

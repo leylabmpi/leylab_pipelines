@@ -49,21 +49,23 @@ def parse_args(test_args=None, subparsers=None):
     # args
     io = parser.add_argument_group('File input/output')
     io.add_argument('--nodes', default=None,
-                        help='nodes.dmp file path. (default: %(default)s)')
+                    help='nodes.dmp file path. (default: %(default)s)')
     io.add_argument('--names', default=None,
-                        help='names.dmp file path. (default: %(default)s)')
+                    help='names.dmp file path. (default: %(default)s)')
     io.add_argument('-o', '--outfile', default='NCBI_taxID2lin.txt',
-                        help='Output file for lineage table (default: %(default)s)')
-
+                    help='Output file for lineage table (default: %(default)s)')
+    
     dmp = parser.add_argument_group('Taxonomy dump')
     dmp.add_argument('-u', '--url', default='ftp://ftp.ncbi.nih.gov/pub/taxonomy/taxdump.tar.gz',
-                        help='URL for downloading taxonomy dump. (default: %(default)s)')
+                    help='URL for downloading taxonomy dump. (default: %(default)s)')
     dmp.add_argument('-d', '--outdir', default=None,
-                        help='Output directory for the taxonomy dump download. (default: %(default)s)')
+                     help='Output directory for the taxonomy dump download. (default: %(default)s)')
+    dmp.add_argument('-a', '--all', action='store_true', default=False,
+                     help='Output all taxonomy levels instead of just the standard levels. (default: %(default)s)')
 
     misc = parser.add_argument_group('Misc')
     misc.add_argument('-p', '--procs', default=1,
-                        help='Number of processors to use. (default: %(default)s)')
+                      help='Number of processors to use. (default: %(default)s)')
 
     # running test args
     if test_args:
@@ -266,6 +268,9 @@ def main(args=None):
             'species']
      
     other_cols = sorted([__ for __ in lineages_df.columns if __ not in cols])
-    output_cols = cols + other_cols
+    if args.all:
+        output_cols = cols + other_cols
+    else:
+        output_cols = cols
     lineages_df.to_csv(args.outfile, index=False, columns=output_cols, sep='\t')
 
