@@ -16,7 +16,7 @@ test_requirements = [
     # TODO: put package test requirements here
 ]
 
-scripts = ['scripts/TECAN', 'scripts/DB']
+scripts = ['scripts/TECAN', 'scripts/DB', 'scripts/LLP']
 
 long_desc = """
 General bioinformatic pipelines associated with the Ley Lab at the MPI in Tuebingen.
@@ -26,7 +26,7 @@ For more information, see the README.
 
 setup(
     name='leylab_pipelines',
-    version='0.1.0',
+    version='0.1.1',
     description="General bioinformatic pipelines associated with the Ley Lab at the MPI in Tuebingen",
     long_description=long_desc + '\n\n' + history,
     author="Nick Youngblut",

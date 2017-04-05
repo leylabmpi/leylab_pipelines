@@ -140,7 +140,6 @@ def acc_to_taxID(db_file, df_acc, column=1):
 
     # accs 
     column = int(column) - 1
-#    accs = np.array(df_acc.iloc[:,column], dtype=object)
     accs = df_acc.iloc[:,column].tolist()
     # determining taxonomic IDs
     if db_file.endswith('.gz'):
@@ -157,12 +156,6 @@ def acc_to_taxID(db_file, df_acc, column=1):
             if accs[i] == line[0]:
                 taxIDs[i] = line[2]
                 continue
-
-#    for i,line in enumerate(inF):
-#        line = line.rstrip().split('\t')
-#        taxIDs[accs == line[0]] = line[2]
-#        if (i+1) % 1000000 == 0:
-#            logging.info('Number of DB records processed: {}'.format(i+1))
 
     return taxIDs
 

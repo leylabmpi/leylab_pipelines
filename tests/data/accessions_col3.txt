@@ -1,4 +1,4 @@
-Accession	OTU	Abundance
+accession	OTU	abundance
 AB125111	1	1.1
 AB125112	2	5.1
 AB125113	3	14.7

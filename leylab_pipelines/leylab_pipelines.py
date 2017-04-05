@@ -13,7 +13,7 @@ from leylab_pipelines import QPCR
 ### DB
 from leylab_pipelines import Acc2TaxID
 from leylab_pipelines import TaxID2Lin
-
+from leylab_pipelines import Join
 
 def TECAN_arg_parse():
   desc = 'Tools for working with the TECAN robot' 
@@ -71,6 +71,30 @@ def DB_arg_parse():
     TaxID2Lin.main(args)
   if args.subparser_name == 'acc2taxID':
     Acc2TaxID.main(args)
+  else:
+    msg = 'Command not recognized: "{}"'
+    raise ValueError(msg.format(args.subparser_name))
+
+
+def LLP_arg_parse():
+  desc = 'Tools for working with public databases' 
+  # subcommand descriptions
+  epi = 'SUBCOMMANDS:\n'
+  epi = epi + '  join - ' + Join.get_desc() + '\n'
+  
+  # main command arg parser
+  parser = argparse.ArgumentParser(description=desc, epilog=epi,
+                                   formatter_class=argparse.RawTextHelpFormatter)
+  
+  # subparsers
+  subparsers = parser.add_subparsers(dest='subparser_name')
+  parser_join = Join.parse_args(subparsers=subparsers)
+  # parsing args
+  args = parser.parse_args()
+  
+  # running function
+  if args.subparser_name == 'join':
+    Join.main(args)
   else:
     msg = 'Command not recognized: "{}"'
     raise ValueError(msg.format(args.subparser_name))
