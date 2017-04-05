@@ -34,6 +34,12 @@ def parse_args(test_args=None, subparsers=None):
          --join 'accession=Acc'
       This can be extended to multiple column joins with a comma-sep list.
 
+    DTYPEs:
+      The -L and -R options designate the dtypes (eg. 'object' or 'float')
+      for the columns that are joined (see JOIN). The dtypes MUST match for
+      the matched joined columns. If only 1 dtype is provided for multiple 
+      join columns, then that dtype is applied to all join columns.
+
     OUTPUT:
       The table partitions will be written to separate temporary files, then
       joined into the final output file (designated with --outfile)
@@ -49,20 +55,25 @@ def parse_args(test_args=None, subparsers=None):
     io = parser.add_argument_group('Input/Output')
     io.add_argument('table', metavar='table', type=str, nargs=2,
                      help='File names of the tables to join on')
-    io.add_argument('-j', '--join', default='1=1',
-                     help='Columns to join on. See DESCRIPTION (default: %(default)s)')
-    io.add_argument('-H', '--how', default='inner',
-                     help='How to join the tables (default: %(default)s)')                    
     io.add_argument('-o', '--outfile', default='-',
                      help='Output file name; "-" if to STDOUT (default: %(default)s)')
-    io.add_argument('-s', '--sep', default='\t',
+    jn = parser.add_argument_group('How to join')
+    jn.add_argument('-j', '--join', default='1=1',
+                     help='Columns to join on. See DESCRIPTION (default: %(default)s)')
+    jn.add_argument('-H', '--how', default='inner',
+                     help='How to join the tables (default: %(default)s)')                    
+    jn.add_argument('-s', '--sep', default='\t',
                      help='Column separator (default: %(default)s)')
+    jn.add_argument('-L', '--dtypeL', default='object',
+                     help='dtype(s) for left table join column(s) (default: %(default)s)')    
+    jn.add_argument('-R', '--dtypeR', default='object',
+                     help='dtype(s) for right table join column(s) (default: %(default)s)')    
+
 #    io.add_argument('-x', '--no-header', default=False, action='store_true',
 #                     help='No header in input table (default: %(default)s)')
-
-    misc = parser.add_argument_group('Misc')
-    misc.add_argument('-p', '--procs', default=1,
-                     help='Number of processors to use. (default: %(default)s)')
+#    misc = parser.add_argument_group('Misc')
+#    misc.add_argument('-p', '--procs', default=1,
+#                     help='Number of processors to use. (default: %(default)s)')
 
     # running test args
     if test_args:
@@ -88,6 +99,18 @@ def parse_join(join_str):
             join_on['right'] = [y[1]]
 
     return(join_on)
+
+
+def parse_dtype(dtype_str, join_on):
+    dtypes = dtype_str.split(',')
+    if len(dtypes) == 1:
+        dtypes = {x:dtype_str for x in join_on}
+    elif len(dtypes) != len(join_on):
+        msg = 'The number of dtypes should be 1 or the same length as --join'
+        raise ValueError(msg)
+    else:
+        dtypes = {x[i]:dtypes[i] for i in range(len(dtypes))}
+    return dtypes
 
 
 def get_table(infile, sep='\t'):
@@ -127,10 +150,13 @@ def main(args=None):
     # Input
     if args is None:
         args = parse_args()
-    args.procs = int(args.procs)
+    #args.procs = int(args.procs)
 
     # parsing the join arg
     join_on = parse_join(args.join)
+    ## parsing dtypes
+    args.dtypeL = parse_dtype(args.dtypeL, join_on['left'])
+    args.dtypeR = parse_dtype(args.dtypeR, join_on['right'])
 
     # creating table objects
     df1 = get_table(args.table[0], sep=args.sep)

@@ -9,7 +9,8 @@ with open('HISTORY.rst') as history_file:
 
 requirements = [
     'numpy',
-    'pandas'
+    'pandas',
+    'dask'
 ]
 
 test_requirements = [
@@ -26,7 +27,7 @@ For more information, see the README.
 
 setup(
     name='leylab_pipelines',
-    version='0.1.2',
+    version='0.1.3',
     description="General bioinformatic pipelines associated with the Ley Lab at the MPI in Tuebingen",
     long_description=long_desc + '\n\n' + history,
     author="Nick Youngblut",
