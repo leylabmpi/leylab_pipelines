@@ -6,6 +6,7 @@ import glob
 import tempfile
 import argparse
 import logging
+import shutil
 ## 3rd party
 import dask.dataframe as dd
 ## package
@@ -64,16 +65,14 @@ def parse_args(test_args=None, subparsers=None):
                      help='How to join the tables (default: %(default)s)')                    
     jn.add_argument('-s', '--sep', default='\t',
                      help='Column separator (default: %(default)s)')
-    jn.add_argument('-L', '--dtypeL', default='object',
+    jn.add_argument('-L', '--dtypeL', default='str',
                      help='dtype(s) for left table join column(s) (default: %(default)s)')    
-    jn.add_argument('-R', '--dtypeR', default='object',
+    jn.add_argument('-R', '--dtypeR', default='str',
                      help='dtype(s) for right table join column(s) (default: %(default)s)')    
 
-#    io.add_argument('-x', '--no-header', default=False, action='store_true',
-#                     help='No header in input table (default: %(default)s)')
-#    misc = parser.add_argument_group('Misc')
-#    misc.add_argument('-p', '--procs', default=1,
-#                     help='Number of processors to use. (default: %(default)s)')
+    misc = parser.add_argument_group('Misc')
+    misc.add_argument('-c', '--clean', action='store_false', default=True,
+                      help='Remove *.partd files from the temporary dir. (default: %(default)s)')
 
     # running test args
     if test_args:
@@ -146,12 +145,28 @@ def write_table(infile, outfile, conn='w', header=True):
             for line in inF:
                 outF.write(line)
 
+def clean_partd(tmpDir=None):
+    if tmpDir is None:
+        tmpDir = tempfile.gettempdir()    
+    logging.info('Cleaning *.partd directories in : {}'.format(tmpDir))
+
+    g = os.path.join(tmpDir, 'tmp*.partd')
+    partd_dirs = glob.glob(g)
+    for D in partd_dirs:
+        try:
+            shutil.rmtree(D)
+        except PermissionError:
+            pass
+
 def main(args=None):
     # Input
     if args is None:
         args = parse_args()
-    #args.procs = int(args.procs)
 
+    # clean tmp directory
+    if args.clean:
+        clean_partd()
+ 
     # parsing the join arg
     join_on = parse_join(args.join)
     ## parsing dtypes
