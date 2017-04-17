@@ -9,4 +9,4 @@ from leylab_pipelines import leylab_pipelines
 
 # main
 if __name__ == '__main__':
-    leylab_pipelines.DB_arg_parse()
+    leylab_pipelines.LLP_DB_arg_parse()

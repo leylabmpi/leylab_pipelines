@@ -10,10 +10,13 @@ import argparse
 from leylab_pipelines import Map2Robot
 from leylab_pipelines import Dilute
 from leylab_pipelines import QPCR
-### DB
+### LLP-DB
+from leylab_pipelines import Convert
 from leylab_pipelines import Acc2TaxID
 from leylab_pipelines import TaxID2Lin
+### LLP
 from leylab_pipelines import Join
+
 
 def TECAN_arg_parse():
   desc = 'Tools for working with the TECAN robot' 
@@ -48,10 +51,11 @@ def TECAN_arg_parse():
     raise ValueError(msg.format(args.subparser_name))
 
 
-def DB_arg_parse():
+def LLP_DB_arg_parse():
   desc = 'Tools for working with public databases' 
   # subcommand descriptions
   epi = 'SUBCOMMANDS:\n'
+  epi = epi + '  convert - ' + Convert.get_desc() + '\n'
   epi = epi + '  acc2taxID - ' + Acc2TaxID.get_desc() + '\n'
   epi = epi + '  taxID2lin - ' + TaxID2Lin.get_desc() + '\n'
   
@@ -61,13 +65,16 @@ def DB_arg_parse():
   
   # subparsers
   subparsers = parser.add_subparsers(dest='subparser_name')
+  parser_convert = Convert.parse_args(subparsers=subparsers)
   parser_taxID2lin = TaxID2Lin.parse_args(subparsers=subparsers)
   parser_acc2taxID = Acc2TaxID.parse_args(subparsers=subparsers)
   # parsing args
   args = parser.parse_args()
   
   # running function
-  if args.subparser_name == 'taxID2lin':
+  if args.subparser_name == 'convert':
+    Convert.main(args)
+  elif args.subparser_name == 'taxID2lin':
     TaxID2Lin.main(args)
   elif args.subparser_name == 'acc2taxID':
     Acc2TaxID.main(args)
@@ -77,7 +84,7 @@ def DB_arg_parse():
 
 
 def LLP_arg_parse():
-  desc = 'Tools for working with public databases' 
+  desc = 'General bioinformatic tools'
   # subcommand descriptions
   epi = 'SUBCOMMANDS:\n'
   epi = epi + '  join - ' + Join.get_desc() + '\n'
