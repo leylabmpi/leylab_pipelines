@@ -9,7 +9,7 @@ import unittest
 ## 3rd party
 import pandas as pd
 ## package
-from leylab_pipelines import QPCR
+from leylab_pipelines.TECAN import QPCR
 from leylab_pipelines import Utils
 
 

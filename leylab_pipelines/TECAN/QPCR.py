@@ -12,7 +12,7 @@ import numpy as np
 import pandas as pd
 ## package
 from leylab_pipelines import Utils
-from leylab_pipelines import Fluent
+from leylab_pipelines.TECAN import Fluent
 
 
 # functions

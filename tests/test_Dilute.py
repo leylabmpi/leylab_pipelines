@@ -9,7 +9,7 @@ import unittest
 ## 3rd party
 import pandas as pd
 ## package
-from leylab_pipelines import Dilute
+from leylab_pipelines.TECAN import Dilute
 from leylab_pipelines import Utils
 
 

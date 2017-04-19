@@ -35,7 +35,9 @@ setup(
     author_email='leylabmpi@gmail.com',
     url='https://github.com/leylabmpi/leylab_pipelines',
     packages=[
-        'leylab_pipelines',
+        'leylab_pipelines', 
+        'leylab_pipelines.DB',
+        'leylab_pipelines.TECAN',
     ],
     package_dir={'leylab_pipelines':
                  'leylab_pipelines'},

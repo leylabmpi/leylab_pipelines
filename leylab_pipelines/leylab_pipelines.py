@@ -7,13 +7,13 @@ import sys
 import argparse
 ## package
 ### TECAN
-from leylab_pipelines import Map2Robot
-from leylab_pipelines import Dilute
-from leylab_pipelines import QPCR
+from leylab_pipelines.TECAN import Map2Robot
+from leylab_pipelines.TECAN import Dilute
+from leylab_pipelines.TECAN import QPCR
 ### LLP-DB
-from leylab_pipelines import Convert
-from leylab_pipelines import Acc2TaxID
-from leylab_pipelines import TaxID2Lin
+from leylab_pipelines.DB import Convert
+from leylab_pipelines.DB import Acc2TaxID
+from leylab_pipelines.DB import TaxID2Lin
 ### LLP
 from leylab_pipelines import Join
 

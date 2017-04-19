@@ -9,7 +9,7 @@ import unittest
 ## 3rd party
 import pandas as pd
 ## package
-from leylab_pipelines import Fluent
+from leylab_pipelines.TECAN import Fluent
 
 
 # data dir

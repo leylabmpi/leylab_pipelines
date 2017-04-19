@@ -7,7 +7,7 @@ import os
 import sys
 import unittest
 ## package
-from leylab_pipelines import Convert
+from leylab_pipelines.DB import Convert
 
 
 # data dir
