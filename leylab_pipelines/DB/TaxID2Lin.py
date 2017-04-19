@@ -2,6 +2,7 @@
 ## batteries
 import os
 import sys
+import time
 import argparse
 import requests
 import functools
@@ -44,10 +45,12 @@ def parse_args(test_args=None, subparsers=None):
                      help='Output file name; "STDOUT" if to STDOUT (default: %(default)s)')
 
     lin = parser.add_argument_group('Lineage')
-    lin.add_argument('-l', '--levels', type=int, default=9,
+    lin.add_argument('-l', '--levels', type=int, default=8,
                      help='Number of taxonomic levels (default: %(default)s)')                     
 
     misc = parser.add_argument_group('Misc')
+    misc.add_argument('-t', '--tries', type=int, default=3,
+                      help='Number of tries to make each request. (default: %(default)s)')
     misc.add_argument('-p', '--procs', type=int, default=1,
                       help='Number of processors to use. (default: %(default)s)')
 
@@ -70,7 +73,7 @@ def main(args=None):
     if procs < 2:
         procs = None
     pool = mp.Pool(processes = procs)
-    func = functools.partial(query_ncbi_lineage, levels=args.levels)
+    func = functools.partial(query_ncbi_lineage, levels=args.levels, tries=args.tries)
     lineages = pool.map(func, taxIDs)
 
     # writing lineages
@@ -81,7 +84,7 @@ def write_lineages(lineages, outfile, levels):
     if outfile == 'STDOUT':
         outF = sys.stdout
     else:
-        outF = open(outfile, 'w')
+        outF = open(outfile, 'r')
 
     header = ['taxID'] + ['rank_{}'.format(x+1) for x in range(levels)]
     outF.write('\t'.join(header) + '\n')
@@ -98,7 +101,7 @@ def get_taxIDs(infile, col_idx=1, sep='\t', header=False):
     if infile == 'STDIN':
         inF = sys.stdin
     else:
-        inF = open(infile, 'w')
+        inF = open(infile)
     
     taxIDs = {}
     for i,line in enumerate(inF):
@@ -125,7 +128,7 @@ def get_taxIDs(infile, col_idx=1, sep='\t', header=False):
     return taxIDs.keys()
     
 
-def query_ncbi_lineage(taxon_id, levels=9):
+def query_ncbi_lineage(taxon_id, levels=9, tries=3):
     """Obtain the NCBI lineage for a taxon ID
     
     Parameters
@@ -144,14 +147,22 @@ def query_ncbi_lineage(taxon_id, levels=9):
     params = {'db': 'taxonomy',  # We want to query the taxonomy database
               'id': taxon_id}    # We're requesting detail on the taxon ID specifically
     
-    # Make the request
-    r = requests.get(url, params=params)
+    for i in range(tries):
+        # Make the request
+        r = requests.get(url, params=params)
     
-    # Bail if we received a bad status
-    if r.status_code != 200:
-        msg = 'WARNING: status code = {} for taxID {}\n'
-        sys.stderr.write(msg.format(r.status_code, taxon_id))
-        return [taxon_id] + ['unclassified'] * levels
+        # Bail if we received a bad status
+        if r.status_code != 200:
+            if i < tries-1:
+                msg = 'WARNING: status code = {} for taxID {}. Retrying\n'
+                sys.stderr.write(msg.format(r.status_code, taxon_id))
+                time.sleep(3)
+            else:
+                msg = 'WARNING: status code = {} for taxID {}. Giving up\n'
+                sys.stderr.write(msg.format(r.status_code, taxon_id))
+                return [taxon_id] + ['unclassified'] * levels
+        else:
+            break
     
     # NCBI returns XML, so we need to parse the "content" of our request into a usable structure
     tree = ET.fromstring(r.content)
