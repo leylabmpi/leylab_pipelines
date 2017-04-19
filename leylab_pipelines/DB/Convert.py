@@ -117,7 +117,7 @@ def get_conversion(IDs, email, method, procs=1):
     elif method.lower() == 'hgnc2entrezgene':
         IDs = pool.map(convert_hgnc_to_entrez, IDs)
     elif method.lower() == 'entreztrangene2entrezgene':
-        IDs = poolmap(convert_ensembl_to_entrez, IDs)
+        IDs = pool.map(convert_ensembl_to_entrez, IDs)
     else:
         msg = 'Method "{}" not recognized'
         raise IOError(msg.format(method))

@@ -14,6 +14,8 @@ from leylab_pipelines.TECAN import QPCR
 from leylab_pipelines.DB import Convert
 from leylab_pipelines.DB import Acc2TaxID
 from leylab_pipelines.DB import TaxID2Lin
+from leylab_pipelines.DB import TaxID2LinTbl
+from leylab_pipelines.DB import EggNOG
 ### LLP
 from leylab_pipelines import Join
 
@@ -58,6 +60,8 @@ def LLP_DB_arg_parse():
   epi = epi + '  convert - ' + Convert.get_desc() + '\n'
   epi = epi + '  acc2taxID - ' + Acc2TaxID.get_desc() + '\n'
   epi = epi + '  taxID2lin - ' + TaxID2Lin.get_desc() + '\n'
+  epi = epi + '  taxID2linTbl - ' + TaxID2LinTbl.get_desc() + '\n'
+  epi = epi + '  eggnog - ' + EggNOG.get_desc() + '\n'
   
   # main command arg parser
   parser = argparse.ArgumentParser(description=desc, epilog=epi,
@@ -67,17 +71,23 @@ def LLP_DB_arg_parse():
   subparsers = parser.add_subparsers(dest='subparser_name')
   parser_convert = Convert.parse_args(subparsers=subparsers)
   parser_taxID2lin = TaxID2Lin.parse_args(subparsers=subparsers)
+  parser_taxID2lintbl = TaxID2LinTbl.parse_args(subparsers=subparsers)
   parser_acc2taxID = Acc2TaxID.parse_args(subparsers=subparsers)
+  parser_eggnog = EggNOG.parse_args(subparsers=subparsers)
   # parsing args
   args = parser.parse_args()
   
-  # running function
-  if args.subparser_name == 'convert':
+  # running command
+  if args.subparser_name.lower() == 'convert':
     Convert.main(args)
-  elif args.subparser_name == 'taxID2lin':
+  elif args.subparser_name.lower() == 'taxid2lin':
     TaxID2Lin.main(args)
-  elif args.subparser_name == 'acc2taxID':
+  elif args.subparser_name.lower() == 'taxid2lintbl':
+    TaxID2LinTbl.main(args)
+  elif args.subparser_name.lower() == 'acc2taxid':
     Acc2TaxID.main(args)
+  elif args.subparser_name.lower() == 'eggnog':
+    EggNOG.main(args)
   else:
     msg = 'Command not recognized: "{}"'
     raise ValueError(msg.format(args.subparser_name))

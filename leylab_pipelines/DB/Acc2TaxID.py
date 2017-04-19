@@ -42,7 +42,7 @@ def parse_args(test_args=None, subparsers=None):
     # args
     acc = parser.add_argument_group('Accessions')
     acc.add_argument('accessions', metavar='accessions', type=str,
-                     help='Input table containing the acessions, "-" if from STDIN')
+                     help='Input table containing the acessions, use "STDIN" if from STDIN')
     acc.add_argument('-c', '--column', default=1,
                      help='Column number containing the accessions (default: %(default)s)')
     acc.add_argument('-s', '--sep', default='\t',
@@ -79,7 +79,7 @@ def load_acc_df(infile, sep='\t', no_header=False):
         header = None
     else:
         header = 0
-    if infile == '-':
+    if infile == 'STDIN':
         df = pd.read_csv(sys.stdin, sep=sep, header=header)
     else:
         df = pd.read_csv(infile, sep=sep, header=header)
