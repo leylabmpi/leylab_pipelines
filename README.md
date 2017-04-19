@@ -24,7 +24,16 @@ leylab_pipelines
 
 ### TECAN robot helper commands
 
-For commands: install, then use `TECAN -h`
+`TECAN -h`
+
+### Commands for working with bio databases
+
+`LLP-DB -h`
+
+### Misc commands
+
+`LLP -h`
+
 
 ## Examples
 
