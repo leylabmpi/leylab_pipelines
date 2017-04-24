@@ -11,6 +11,8 @@ requirements = [
     'numpy',
     'pandas',
     'dask',
+    'toolz',
+    'cloudpickle',
     'xmltodict'
 ]
 

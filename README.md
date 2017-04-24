@@ -49,6 +49,10 @@ leylab_pipelines
 
 [[top](#sections)]
 
+### With pip
+
+`pip install leylab_pipelines`
+
 ### Testing
 
 `python setpy.py test`

@@ -22,7 +22,7 @@ def get_desc():
 def parse_args(test_args=None, subparsers=None):
     # desc
     #desc = 'Convert a mapping file to a NGS amplicon worklist file for the TECAN robot'
-    desc = get_desc
+    desc = get_desc()
     epi = """DESCRIPTION:
     Convert a QIIME-formatted mapping file to a GWL file, which is used by the TECAN
     robot to conduct the NGS amplicon PCR prep (ie., combining MasterMix, primers, samples, etc).
