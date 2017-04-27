@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from setuptools import setup
+from setuptools import setup, find_packages
 import glob
 
 with open('HISTORY.rst') as history_file:
@@ -36,11 +36,7 @@ setup(
     author="Nick Youngblut",
     author_email='leylabmpi@gmail.com',
     url='https://github.com/leylabmpi/leylab_pipelines',
-    packages=[
-        'leylab_pipelines', 
-        'leylab_pipelines.DB',
-        'leylab_pipelines.TECAN',
-    ],
+    packages=find_packages(),
     package_dir={'leylab_pipelines':
                  'leylab_pipelines'},
     include_package_data=True,

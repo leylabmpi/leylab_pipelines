@@ -4,9 +4,9 @@ from __future__ import print_function
 
 import os
 import sys
-from leylab_pipelines import leylab_pipelines
+from leylab_pipelines import Leylab_pipelines
 
 
 # main
 if __name__ == '__main__':
-    leylab_pipelines.LLP_arg_parse()
+    Leylab_pipelines.LLP_arg_parse()
