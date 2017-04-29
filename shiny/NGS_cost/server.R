@@ -1,18 +1,17 @@
 # Shiny server
 library(shiny)
 library(dplyr)
-#library(tidyr)
-#library(ggplot2)
 library(propagate)
 library(rhandsontable)
 library(readxl)
 
 
 #-- functions --#
-prop_total_GB = function(N_lanes, GB_per_run, #GB_per_run_sd, 
+prop_total_GB = function(N_lanes, GB_per_run,
                          Lanes_per_run, alpha=0.05){
-  # n_runs = numeric
+  # N_lanes = numeric
   # GB_per_run = vector(numeric...)
+  # CALC: Total_GB = GB_per_run / Lanes_per_run * N_lanes 
   df = cbind(N_lanes, Lanes_per_run, GB_per_run) 
   ex = expression(GB_per_run / Lanes_per_run * N_lanes)
   ret = propagate(ex, df, type='stat', alpha=alpha)
@@ -47,9 +46,9 @@ prop_GB_per_sample = function(Total_GB, N_samples, alpha=0.05){
 prop_target_coverage = function(GB_per_sample, Target_rel_abund,
                                 Target_genome_size, alpha=0.05){
   # GB_per_sample = prop_object
-  # target_rel_abund = numeric (mean,sd)
-  # target_genome_size = numeric (mean,sd)
-  # CALC: target_coverage = GB_per_sample * (target_rel_abund / 100) / target_genome_size
+  # Target_rel_abund = numeric (mean,sd)
+  # Target_genome_size = numeric (mean,sd)
+  # CALC: Target_coverage = GB_per_sample * (Target_rel_abund / 100) / (Target_genome_size / 1000)
   df = cbind(GB_per_sample, Target_rel_abund, Target_genome_size)
   ex = expression(GB_per_sample * (Target_rel_abund / 100) / (Target_genome_size / 1000))
   ret = propagate(ex, df, alpha=alpha)

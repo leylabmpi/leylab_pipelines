@@ -1,0 +1,11 @@
+name: NGS_cost
+title: NGS_cost
+account: nick-youngblut
+server: shinyapps.io
+appId: 146067
+bundleId: 808958
+url: https://nick-youngblut.shinyapps.io/NGS_cost/
+when: 1493479871.29757
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: data/~$seq_costs.xlsx
