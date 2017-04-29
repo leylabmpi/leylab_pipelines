@@ -1,5 +1,6 @@
 # Shiny UI
 library(shiny)
+library(rhandsontable)
 
 
 #-- data --#
@@ -37,13 +38,13 @@ shinyUI(fluidPage(
                    max=NA),
       # amount of multiplexing
       numericInput("n_multiplex",
-                  label = "Number of samples per run (multiplexing)",
+                  label = "Number of samples per lane (multiplexing)",
                   value=96,
                   min=1,
                   max=NA),
       # amount of runs 
       sliderInput("n_runs_per_sample",
-                  label = "Number of runs per sample (increasing coverage)",
+                  label = "Number of lanes per sample (increasing coverage)",
                   value=1,
                   min=1,
                   max=10),
@@ -55,14 +56,16 @@ shinyUI(fluidPage(
       # reagent kit
       conditionalPanel(
         condition = "input.sequencer == 'HiSeq_3000'",
-        selectInput("reagents_HiSeq_3000", 
+        selectInput("HiSeq_sequencer_reagents", 
                     label = "Sequencing Reagents",
-                    HiSeq3000_reagents)),
+                    HiSeq3000_reagents,
+                    selected = 1)),
       conditionalPanel(
         condition = "input.sequencer == 'MiSeq'",
-        selectInput("reagents_MiSeq", 
+        selectInput("MiSeq_sequencer_reagents", 
                     label = "Sequencing Reagents",
-                    MiSeq_reagents)),
+                    MiSeq_reagents,
+                    selected = 1)),
       # library prep
       selectInput("library_prep_kit", 
                   label = "Select library prep kit", 
@@ -94,6 +97,7 @@ shinyUI(fluidPage(
     ),
     
     # Show a plot of the generated distribution
+    #mainPanel(rHandsontableOutput("hot", width = 1400))
     mainPanel(tableOutput("summaryTable"))
   )
 ))

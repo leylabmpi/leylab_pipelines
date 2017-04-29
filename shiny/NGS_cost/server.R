@@ -1,165 +1,164 @@
 # Shiny server
 library(shiny)
-#library(dplyr)
+library(dplyr)
 #library(tidyr)
 #library(ggplot2)
 library(propagate)
+library(rhandsontable)
+library(readxl)
 
 
-#-- data table --#
-# costs
-reagent_costs = list(
-  'HiSeq_3000' = list('1x50_bp' = 776.73,
-                      '1x75_bp' = 1155.54,
-                      '2x150_bp' = 1990.76),
-  'MiSeq' = list('2x250_bp'= 1090.82,
-                 '2x300_bp' = 1469.78)
-)
-reagent_GB = list(
-  'HiSeq_3000' = list('1x50_bp' = c(115, 20),    # 105-125
-                      '1x75_bp' = c(350, 25),    # 325-375
-                      '2x150_bp' = c(700, 50)),  # 650-750
-  'MiSeq' = list('2x250_bp'= c(3.55, 0.5),         # 3.3-3.8
-                 '2x300_bp' = c(14.1, 1.8))        # 13.2-15
-)
-library_prep_kit_costs = c('nextera_24_rxns' = 1921.19,
-                           'nextera_96_rxns' = 6500,
-                           'lite' = 0,    # not sure about the actual cost
-                           'PCR' = 0)
-library_prep_kit_multi = c('nextera_24_rxns' = 24,
-                           'nextera_96_rxns' = 96,
-                           'lite' = 96,
-                           'PCR' = 96)
-
-
-prop_total_GB = function(n_runs, GB_per_run, alpha=0.05){
+#-- functions --#
+prop_total_GB = function(N_lanes, GB_per_run, #GB_per_run_sd, 
+                         Lanes_per_run, alpha=0.05){
   # n_runs = numeric
   # GB_per_run = vector(numeric...)
-  n_runs = c(n_runs, 0)
-  df = cbind(n_runs, GB_per_run)
-  ex = expression(n_runs * GB_per_run)
-  ret = propagate(ex, df, alpha=alpha)
-  return(ret$prop)
+  df = cbind(N_lanes, Lanes_per_run, GB_per_run) 
+  ex = expression(GB_per_run / Lanes_per_run * N_lanes)
+  ret = propagate(ex, df, type='stat', alpha=alpha)
+  ret = ret$prop[c(1, 3)] %>% as.data.frame
+  colnames(ret) = c('Total_GB')
+  return(ret)
 }
 
-prop_cost_per_GB = function(total_cost, total_GB, alpha=0.05){
-  # total_cost = numeric
-  # total_GB = prop_object
+prop_cost_per_GB = function(Total_cost, Total_GB, alpha=0.05){
   # CALC: cost_per_GB = total_cost / total_GB 
-  total_GB = c(total_GB['Mean.1'], total_GB['sd.1'])
-  total_cost = c(total_cost, 0)
-  df = cbind(total_GB, total_cost)
-  ex = expression(total_cost / total_GB)
-  ret = propagate(ex, df, alpha=alpha)
-  return(ret$prop) 
+  df = cbind(Total_cost, Total_GB)
+  ex = expression(Total_cost / Total_GB)
+  ret = propagate(ex, df, type='stat', alpha=alpha)
+  ret = ret$prop[c(1, 3)] %>% as.data.frame
+  colnames(ret) = ('Cost_per_GB')
+  return(ret) 
 }
 
-prop_GB_per_sample = function(n_samples, total_GB, alpha=0.05){
+prop_GB_per_sample = function(Total_GB, N_samples, alpha=0.05){
+  #.$Total_GB_mean, .$Total_GB_sd, .$N_samples
   # n_samples = numeric
   # total_GB = prop_object
   # CALC: GB_per_sample = total_GB / n_samples
-  total_GB = c(total_GB['Mean.1'], total_GB['sd.1'])
-  n_samples = c(n_samples, 0)
-  df = cbind(total_GB, n_samples)
-  ex = expression(total_GB / n_samples)
-  ret = propagate(ex, df, alpha=alpha)
-  return(ret$prop)  
+  df = cbind(Total_GB, N_samples)
+  ex = expression(Total_GB / N_samples)
+  ret = propagate(ex, df, type='stat', alpha=alpha)
+  ret = ret$prop[c(1, 3)] %>% as.data.frame
+  colnames(ret) = c('GB_per_sample')
+  return(ret)  
 }
 
-prop_target_coverage = function(GB_per_sample, target_rel_abund, target_genome_size, alpha=0.05){
+prop_target_coverage = function(GB_per_sample, Target_rel_abund,
+                                Target_genome_size, alpha=0.05){
   # GB_per_sample = prop_object
   # target_rel_abund = numeric (mean,sd)
   # target_genome_size = numeric (mean,sd)
   # CALC: target_coverage = GB_per_sample * (target_rel_abund / 100) / target_genome_size
-  GB_per_sample = c(GB_per_sample['Mean.1'], GB_per_sample['sd.1'])
-  df = cbind(GB_per_sample, target_rel_abund, target_genome_size)
-  ex = expression(GB_per_sample * (target_rel_abund / 100) / (target_genome_size / 1000))
+  df = cbind(GB_per_sample, Target_rel_abund, Target_genome_size)
+  ex = expression(GB_per_sample * (Target_rel_abund / 100) / (Target_genome_size / 1000))
   ret = propagate(ex, df, alpha=alpha)
-  return(ret$prop) 
+  ret = ret$prop[c(1, 3)] %>% as.data.frame
+  colnames(ret) = c('Target_coverage')
+  return(ret) 
 }
 
 
-make_sum_table = function(input){
-  # getting sequencer specifics
-  reagent_cost = NA
-  GB_per_run = NA
+make_sum_table = function(input, df_seq, df_lib){
+  
+  # filtering df
   if(input$sequencer == 'HiSeq_3000'){
-    reagent_cost = reagent_costs[[input$sequencer]][[input$reagents_HiSeq_3000]]
-    GB_per_run = reagent_GB[[input$sequencer]][[input$reagents_HiSeq_3000]]
-  } else 
+    sequencer_reagents = input$HiSeq_sequencer_reagents
+  } else
   if(input$sequencer == 'MiSeq'){
-    reagent_cost = reagent_costs[[input$sequencer]][[input$reagents_MiSeq]]
-    GB_per_run = reagent_GB[[input$sequencer]][[input$reagents_MiSeq]]
+    sequencer_reagents = input$MiSeq_sequencer_reagents
+  } else{
+    stop('Sequencer not recognized')
   }
+  df_seq = df_seq %>%
+      filter(Sequencer == input$sequencer,
+             Seq_reagents == sequencer_reagents) 
+    
+  df_lib = df_lib %>%
+      filter(Lib_prep_kit == input$library_prep_kit)
+  df_seq = cbind(df_seq, df_lib)
   
   # calculating 
-  ## number of runs
-  n_runs = ceiling(input$n_samples / input$n_multiplex)
-  n_runs = n_runs * input$n_runs_per_sample
-  ## number of kits 
-  n_lib_prep_kits = ceiling(input$n_samples / 
-                            library_prep_kit_multi[[input$library_prep_kit]])
-  n_reagent_kits = n_runs
-  ## total cost
-  lib_cost = library_prep_kit_costs[[input$library_prep_kit]]
-  total_cost = n_lib_prep_kits * lib_cost + n_reagent_kits * reagent_cost
-  ## cost per run  
-  cost_per_run = total_cost / n_runs
-  ## cost per sample
-  cost_per_sample = total_cost / input$n_samples
-  ## total bp produced
-  total_GB = prop_total_GB(n_runs, GB_per_run)
-  ## cost per GB
-  #cost_per_GB = total_cost / total_GB 
-  cost_per_GB = prop_cost_per_GB(total_cost, total_GB)
+  df_seq = df_seq %>%
+      mutate(# number of sequencing lanes
+             N_samples = input$n_samples,
+             N_multiplex = input$n_multiplex,
+             N_lanes = ceiling(N_samples / N_multiplex),
+             N_samples_per_lane = N_samples / N_lanes,
+             N_lanes = N_lanes * input$n_runs_per_sample,
+             N_seq_reagent_kits = N_lanes,
+             N_lib_prep_kits = ceiling(N_samples) / Lib_prep_kit_multiplex,
+             # costs
+             Total_cost = N_lib_prep_kits * Lib_prep_kit_cost + 
+                          N_seq_reagent_kits * Lane_cost,
+             Cost_per_lane = Total_cost / N_lanes,
+             Cost_per_sample = Total_cost / N_samples
+             )
+  df_seq = rbind(df_seq, rep(0, length(df_seq)))
+  df_seq[2, 'GB_per_run'] = df_seq[1,'GB_per_run_sd']
+  df_seq = df_seq %>%
+      dplyr::select(-GB_per_run_sd)
+  
+  # error propagation
+  ## Total GB (all lanes)
+  df_tmp = df_seq %>%
+    do(prop_total_GB(.$N_lanes, .$GB_per_run, .$Lanes_per_run)) 
+  df_seq = cbind(df_seq, df_tmp)
+  ## Cost per GB
+  df_tmp = df_seq %>%
+    do(prop_cost_per_GB(.$Total_cost, .$Total_GB))
+  df_seq = cbind(df_seq, df_tmp)  
   ## GB per sample
-  #GB_per_sample = total_GB / input$n_samples
-  GB_per_sample = prop_GB_per_sample(input$n_samples, total_GB)
-  ## coverage of target genome
-  target_coverage = c('Mean.1'=NA, 'sd.1'=NA)
+  df_tmp = df_seq %>%
+    do(prop_GB_per_sample(.$Total_GB, .$N_samples))
+  df_seq = cbind(df_seq, df_tmp)
+  ## Coverage of target genome
   if(input$target_genome_bool == TRUE){
-    target_rel_abund = c(input$target_rel_abund, input$target_rel_abund_sd)
-    target_genome_size = c(input$target_genome_size, input$target_genome_size_sd)
-    target_coverage = prop_target_coverage(GB_per_sample, 
-                                           target_rel_abund, 
-                                           target_genome_size)
+    df_tmp = data.frame(Target_rel_abund = c(input$target_rel_abund, 
+                                             input$target_rel_abund_sd),
+                        Target_genome_size = c(input$target_genome_size,
+                                               input$target_genome_size_sd))
+    df_seq = cbind(df_seq, df_tmp)
+    df_tmp = df_seq %>%
+      do(prop_target_coverage(.$GB_per_sample, .$Target_rel_abund, .$Target_genome_size))
+  } else {
+    df_tmp = data.frame(Target_coverage = c(NA, NA))
   }
+  df_seq = cbind(df_seq, df_tmp)
+
+  # formatting output  
+  df_seq = df_seq %>%
+    dplyr::select(GB_per_run, Lanes_per_run, 
+                    Lane_cost, Lib_prep_kit_cost,
+                    N_lanes, N_seq_reagent_kits, N_lib_prep_kits, 
+                    N_samples_per_lane,
+                    Total_cost, Cost_per_lane, 
+                    Cost_per_sample, Total_GB, Cost_per_GB,
+                    GB_per_sample, Target_coverage) 
+  df = df_seq %>% t %>% as.data.frame
+  colnames(df) = c('Mean', 'SD')
+  df$Variable = gsub('_', ' ', colnames(df_seq))
+  df$Variable = gsub('^N ', '# of ', df$Variable)
+  df = df %>%
+      dplyr::select(Variable, Mean, SD) %>%
+      mutate('Mean + SD' = Mean + SD,
+             'Mean - SD' = Mean - SD) %>%
+      dplyr::select(-SD)
   
-  # data.frame init
-  cats = c('Total cost',
-           'Number of runs',
-           'Cost per sample',
-           'Total GB',
-           'Cost per GB',
-           'GB per sample',
-           'Coverage of target genome')
-  n_cats = length(cats)
-  df_sum = data.frame('Category' = cats,
-                      'Mean' = c(total_cost, n_runs, cost_per_sample, 
-                                 total_GB['Mean.1'], 
-                                 cost_per_GB['Mean.1'], 
-                                 GB_per_sample['Mean.1'],
-                                 target_coverage['Mean.1']),
-                      'Mean_minus_sd' = c(NA, NA, NA,
-                                        total_GB['Mean.1'] - total_GB['sd.1'],
-                                        cost_per_GB['Mean.1'] - cost_per_GB['sd.1'], 
-                                        GB_per_sample['Mean.1'] - GB_per_sample['sd.1'],
-                                        target_coverage['Mean.1'] - target_coverage['sd.1']),
-                      'Mean_plus_sd' = c(NA, NA, NA,
-                                        total_GB['Mean.1'] + total_GB['sd.1'],
-                                        cost_per_GB['Mean.1'] + cost_per_GB['sd.1'], 
-                                        GB_per_sample['Mean.1'] + GB_per_sample['sd.1'],
-                                        target_coverage['Mean.1'] + target_coverage['sd.1'])
-                      )  
   
-  return(df_sum) 
+  return(df)
 }
 
 
 #-- server --#
 shinyServer(function(input, output, session) {
   
+  values = reactiveValues()
+  
+  df_seq = read_excel('data/seq_costs.xlsx', sheet='sequencer')
+  df_lib = read_excel('data/seq_costs.xlsx', sheet='lib_prep')
+  
   # summary table
-  output$summaryTable = renderTable(make_sum_table(input))
-     
+  output$summaryTable = renderTable(make_sum_table(input, df_seq, df_lib),
+                                    digits=1)
 })
